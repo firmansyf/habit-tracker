@@ -1,7 +1,67 @@
-# Welcome to your Expo app 👋
+# HabitTracker
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A simple cross-platform habit tracker built with Expo and React Native. Create habits, mark them complete, and keep an eye on your daily progress from one focused home screen.
 
+## Features
+
+- View today's habits and completion progress
+- Toggle habits between complete and incomplete
+- Add a habit with a name and description
+- Delete habits with confirmation
+- See the current streak at a glance
+- Run the same app on Android, iOS, and the web
+
+## Tech stack
+
+- Expo SDK 57
+- React Native 0.86
+- TypeScript
+- Expo Router for file-based navigation
+- Zustand for habit state management
+
+## Getting started
+
+### Prerequisites
+
+- Node.js
+- pnpm
+- Expo Go, an Android emulator, an iOS simulator, or a browser
+
+### Install and run
+
+```bash
+pnpm install
+pnpm start
+```
+
+From the Expo developer menu, choose a target platform. You can also start one directly:
+
+```bash
+pnpm android
+pnpm ios
+pnpm web
+```
+
+## Development
+
+The app uses Expo Router. Screens live in [`src/app`](src/app), reusable UI lives in [`src/components`](src/components), and the Zustand store is in [`src/store/habit-store.ts`](src/store/habit-store.ts).
+
+Run the linter with:
+
+```bash
+pnpm lint
+```
+
+## Project structure
+
+```text
+src/
+   app/          App screens and Expo Router layouts
+   components/   Shared UI components
+   constants/    Theme values
+   hooks/        Shared React hooks
+   store/        Habit state and actions
+```
 ## Get started
 
 1. Install dependencies
