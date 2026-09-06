@@ -1,4 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
 
 export type Habit = {
   id: string;
@@ -10,9 +12,15 @@ export type Habit = {
 type HabitStore = {
   habits: Habit[];
 
-  addHabit: (name: string, description: string) => void;
+  addHabit: (
+    name: string,
+    description: string
+  ) => void;
+
   toggleHabit: (id: string) => void;
-  deleteHabit : (id: string) => void;
+
+  deleteHabit: (id: string) => void;
+
   updateHabit: (
     id: string,
     name: string,
@@ -41,51 +49,63 @@ const initialHabits: Habit[] = [
   },
 ];
 
-export const useHabitStore = create<HabitStore>((set) => ({
-  habits: initialHabits,
+export const useHabitStore = create<HabitStore>()(
+  persist(
+    (set) => ({
+      habits: initialHabits,
 
-  addHabit: (name, description) =>
-    set((state) => ({
-      habits: [
-        ...state.habits,
-        {
-          id: Date.now().toString(),
-          name,
-          description,
-          completed: false,
-        },
-      ],
-    })),
+      addHabit: (name, description) =>
+        set((state) => ({
+          habits: [
+            ...state.habits,
+            {
+              id: Date.now().toString(),
+              name,
+              description,
+              completed: false,
+            },
+          ],
+        })),
 
-  toggleHabit: (id) =>
-    set((state) => ({
-      habits: state.habits.map((habit) =>
-        habit.id === id
-          ? {
-              ...habit,
-              completed: !habit.completed,
-            }
-          : habit
+      toggleHabit: (id) =>
+        set((state) => ({
+          habits: state.habits.map((habit) =>
+            habit.id === id
+              ? {
+                  ...habit,
+                  completed: !habit.completed,
+                }
+              : habit
+          ),
+        })),
+
+      deleteHabit: (id) =>
+        set((state) => ({
+          habits: state.habits.filter(
+            (habit) => habit.id !== id
+          ),
+        })),
+
+      updateHabit: (id, name, description) =>
+        set((state) => ({
+          habits: state.habits.map((habit) =>
+            habit.id === id
+              ? {
+                  ...habit,
+                  name,
+                  description,
+                }
+              : habit
+          ),
+        })),
+    }),
+
+    {
+      name: 'habit-storage',
+
+      storage: createJSONStorage(
+        () => AsyncStorage
       ),
-    })),
-
-  deleteHabit: (id) =>
-    set((state) => ({
-      habits: state.habits.filter(
-        (habit) => habit.id !== id
-      ),
-    })),
-
-  updateHabit: (id, name, description) =>
-  set((state) => ({
-    habits: state.habits.map((habit) =>
-      habit.id === id
-        ? {
-            ...habit,
-            name,
-            description,
-          }
-        : habit
-    ),
-  })),
-}));
+    }
+  )
+);
