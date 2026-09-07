@@ -8,11 +8,16 @@ export type Habit = {
   name: string;
   description: string;
   completed: boolean;
+  username?: string | null;
   completedDates: string[];
+  setUsername?: (username: string) => void;
 };
 
 type HabitStore = {
   habits: Habit[];
+
+  username?: string | null;
+  setUsername?: (username: string) => void;
 
   addHabit: (
     name: string,
@@ -44,6 +49,13 @@ export const useHabitStore = create<HabitStore>()(
   persist(
     (set) => ({
       habits: initialHabits,
+
+      username: null,
+      setUsername: (username) =>
+        set({
+          username,
+      }),
+
 
       addHabit: (name, description) =>
         set((state) => ({

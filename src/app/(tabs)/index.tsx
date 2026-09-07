@@ -12,6 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHabitStore } from '@/store/habit-store';
 import { getCurrentStreak } from '@/utils/date';
 
+import { useEffect } from 'react';
+ 
 import EmptyState from '@/components/EmptyState';
 import HabitCard from '@/components/HabitCard';
 import ProgressCard from '@/components/ProgressCard';
@@ -22,6 +24,8 @@ export default function HomeScreen() {
 
   const habits = useHabitStore((state) => state.habits);
   const toggleHabit = useHabitStore((state) => state.toggleHabit);
+
+  const username = useHabitStore((state) => state.username);
 
   const deleteHabit = useHabitStore((state) => state.deleteHabit);
 
@@ -60,6 +64,18 @@ export default function HomeScreen() {
     );
   };
 
+
+  useEffect(() => {
+    if (!username) {
+      router.replace('/welcome');
+    }
+  }, [username]);
+
+
+  if (!username) {
+    return null;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <FlatList
@@ -77,7 +93,7 @@ export default function HomeScreen() {
                 </Text>
 
                 <Text style={styles.name}>
-                  Yusuf
+                  {username}
                 </Text>
               </View>
 
@@ -119,17 +135,19 @@ export default function HomeScreen() {
           />
         )}
         ListFooterComponent={
-          <Pressable
-            style={({ pressed }) => [
-              styles.addButton,
-              pressed && styles.addButtonPressed,
-            ]}
-            onPress={() => router.push('/create')}
-          >
-            <Text style={styles.addButtonText}>
-              + Add Habit
-            </Text>
-          </Pressable>
+          habits.length > 0 ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.addButton,
+                pressed && styles.addButtonPressed,
+              ]}
+              onPress={() => router.push('/create')}
+            >
+              <Text style={styles.addButtonText}>
+                + Add Habit
+              </Text>
+            </Pressable>
+          ) : null
         }
          ListEmptyComponent={
           <EmptyState
