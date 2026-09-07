@@ -1,4 +1,5 @@
 import {
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -6,24 +7,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHabitStore } from '@/store/habit-store';
-import { getCurrentStreak, getToday } from '@/utils/date';
+import { getCurrentStreak, getLastSevenDays, getToday, } from '@/utils/date';
 
 
-const getLastSevenDays = () => {
-  const days: string[] = [];
-
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date();
-
-    date.setDate(date.getDate() - i);
-
-    days.push(
-      date.toISOString().split('T')[0]
-    );
-  }
-
-  return days;
-};
 
 export default function StatisticsScreen() {
   const habits = useHabitStore(
@@ -56,9 +42,20 @@ export default function StatisticsScreen() {
 
   const lastSevenDays = getLastSevenDays();
 
+  const getCompletedCount = (
+    date: string
+  ) => {
+    return habits.filter((habit) =>
+      habit.completedDates?.includes(date)
+    ).length;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>
           Statistics
         </Text>
@@ -149,12 +146,8 @@ export default function StatisticsScreen() {
 
           <View style={styles.daysRow}>
             {lastSevenDays.map((date) => {
-              const hasCompleted = habits.some(
-                (habit) =>
-                  habit.completedDates?.includes(
-                    date
-                  )
-              );
+              const completedCount =
+                getCompletedCount(date);
 
               const day = new Date(
                 `${date}T00:00:00`
@@ -174,15 +167,13 @@ export default function StatisticsScreen() {
                   <View
                     style={[
                       styles.dayCircle,
-                      hasCompleted &&
+                      completedCount > 0 &&
                         styles.dayCircleCompleted,
                     ]}
                   >
-                    {hasCompleted && (
-                      <Text
-                        style={styles.dayCheck}
-                      >
-                        ✓
+                    {completedCount > 0 && (
+                      <Text style={styles.dayCheck}>
+                        {completedCount}
                       </Text>
                     )}
                   </View>
@@ -191,7 +182,7 @@ export default function StatisticsScreen() {
             })}
           </View>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -204,6 +195,7 @@ const styles = StyleSheet.create({
 
   content: {
     padding: 20,
+    paddingBottom: 40,
   },
 
   title: {
@@ -318,13 +310,14 @@ const styles = StyleSheet.create({
   },
 
   dayCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#E2E8F0',
     justifyContent: 'center',
     alignItems: 'center',
   },
+
 
   dayCircleCompleted: {
     backgroundColor: '#16A34A',
@@ -333,6 +326,7 @@ const styles = StyleSheet.create({
   dayCheck: {
     color: '#FFFFFF',
     fontWeight: '700',
+    fontSize: 13,
   },
 
   streakCard: {

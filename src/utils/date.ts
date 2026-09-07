@@ -56,3 +56,25 @@ export const getCurrentStreak = (
 
   return streak;
 };
+
+export const getLastSevenDays = (): string[] => {
+  const days: string[] = [];
+
+  const today = getToday();
+
+  for (let i = 6; i >= 0; i--) {
+    days.push(getDateBefore(today, i));
+  }
+
+  return days;
+};
+
+export const getCompletedCountForDate = (
+  completedDates: string[],
+  date: string
+): number => {
+  return completedDates.filter(
+    (completedDate) =>
+      completedDate === date
+  ).length;
+};

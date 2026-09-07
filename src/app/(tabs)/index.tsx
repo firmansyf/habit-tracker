@@ -113,7 +113,7 @@ export default function HomeScreen() {
           </View>
         }
         renderItem={({ item }) => (
-            <View style={styles.habitCard}>
+         <View style={styles.habitCard}>
           <Pressable
             style={({ pressed }) => [
               styles.habitMain,
