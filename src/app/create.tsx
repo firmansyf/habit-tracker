@@ -20,6 +20,12 @@ import {
   useHabitStore,
 } from '@/store/habit-store';
 
+import {
+  cancelHabitReminder,
+  requestNotificationPermission,
+  scheduleHabitReminder,
+} from '@/utils/notification';
+
 const FREQUENCY_OPTIONS: {
   value: HabitFrequency;
   label: string;
@@ -42,6 +48,34 @@ const FREQUENCY_OPTIONS: {
   },
 ];
 
+const REMINDER_OPTIONS = [
+  {
+    hour: 8,
+    minute: 0,
+    label: '08:00',
+  },
+  {
+    hour: 9,
+    minute: 0,
+    label: '09:00',
+  },
+  {
+    hour: 12,
+    minute: 0,
+    label: '12:00',
+  },
+  {
+    hour: 18,
+    minute: 0,
+    label: '18:00',
+  },
+  {
+    hour: 20,
+    minute: 0,
+    label: '20:00',
+  },
+];
+
 export default function CreateHabitScreen() {
   const router = useRouter();
 
@@ -57,11 +91,17 @@ export default function CreateHabitScreen() {
     (state) => state.updateHabit
   );
 
+  const updateReminder = useHabitStore(
+    (state) => state.updateReminder
+  );
+
   const habit = useHabitStore((state) =>
     state.habits.find(
       (habit) => habit.id === id
     )
   );
+
+  const notificationIds = habit?.notificationIds ?? [];
 
   const [name, setName] = useState('');
   const [description, setDescription] =
@@ -69,6 +109,15 @@ export default function CreateHabitScreen() {
 
   const [frequency, setFrequency] =
     useState<HabitFrequency>('daily');
+
+  const [reminderEnabled, setReminderEnabled] =
+    useState(false);
+
+  const [reminderHour, setReminderHour] =
+    useState(8);
+
+  const [reminderMinute, setReminderMinute] =
+    useState(0);
 
   const isEditMode = Boolean(id);
 
@@ -80,33 +129,185 @@ export default function CreateHabitScreen() {
       setFrequency(
         habit.frequency ?? 'daily'
       );
+
+      setReminderEnabled(
+        habit.reminderEnabled ?? false
+      );
+
+      setReminderHour(
+        habit.reminderHour ?? 8
+      );
+
+      setReminderMinute(
+        habit.reminderMinute ?? 0
+      );
     }
   }, [habit]);
 
-  const handleSaveHabit = () => {
-    if (!name.trim()) {
+ const handleSaveHabit = async () => {
+  if (!name.trim()) {
+    return;
+  }
+
+  /*
+   * EDIT HABIT
+   */
+  if (isEditMode && id) {
+    /*
+     * Cancel notification lama terlebih dahulu.
+     */
+    if (notificationIds.length > 0) {
+      await cancelHabitReminder(
+        notificationIds
+      );
+    }
+
+    /*
+     * Update informasi habit.
+     */
+    updateHabit(
+      id,
+      name.trim(),
+      description.trim() ||
+        'No description',
+      frequency
+    );
+
+    /*
+     * Jika reminder OFF,
+     * cukup kosongkan notification IDs.
+     */
+    if (!reminderEnabled) {
+      updateReminder(
+        id,
+        false,
+        reminderHour,
+        reminderMinute,
+        []
+      );
+
+      router.back();
       return;
     }
 
-    if (isEditMode && id) {
-      updateHabit(
+    /*
+     * Request permission.
+     */
+    const permissionGranted =
+      await requestNotificationPermission();
+
+    /*
+     * Jika permission ditolak,
+     * jangan membuat notification.
+     */
+    if (!permissionGranted) {
+      updateReminder(
         id,
-        name.trim(),
-        description.trim() ||
-          'No description',
-        frequency
+        false,
+        reminderHour,
+        reminderMinute,
+        []
       );
-    } else {
-      addHabit(
-        name.trim(),
-        description.trim() ||
-          'No description',
-        frequency
-      );
+
+      router.back();
+      return;
     }
 
+    /*
+     * Schedule notification baru.
+     */
+    const newNotificationIds =
+      await scheduleHabitReminder(
+        name.trim(),
+        frequency,
+        reminderHour,
+        reminderMinute
+      );
+
+    /*
+     * Simpan notification IDs.
+     */
+    updateReminder(
+      id,
+      true,
+      reminderHour,
+      reminderMinute,
+      newNotificationIds
+    );
+
     router.back();
-  };
+    return;
+  }
+
+  /*
+   * CREATE HABIT
+   */
+  const newHabitId = addHabit(
+    name.trim(),
+    description.trim() ||
+      'No description',
+    frequency,
+    reminderEnabled,
+    reminderHour,
+    reminderMinute
+  );
+
+  /*
+   * Jika reminder OFF,
+   * tidak perlu membuat notification.
+   */
+  if (!reminderEnabled) {
+    router.back();
+    return;
+  }
+
+  /*
+   * Request notification permission.
+   */
+  const permissionGranted =
+    await requestNotificationPermission();
+
+  /*
+   * Jika permission ditolak,
+   * reminder tetap disimpan sebagai OFF.
+   */
+  if (!permissionGranted) {
+    updateReminder(
+      newHabitId,
+      false,
+      reminderHour,
+      reminderMinute,
+      []
+    );
+
+    router.back();
+    return;
+  }
+
+  /*
+   * Schedule notification.
+   */
+  const newNotificationIds =
+    await scheduleHabitReminder(
+      name.trim(),
+      frequency,
+      reminderHour,
+      reminderMinute
+    );
+
+  /*
+   * Simpan notification IDs.
+   */
+  updateReminder(
+    newHabitId,
+    true,
+    reminderHour,
+    reminderMinute,
+    newNotificationIds
+  );
+
+  router.back();
+};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -261,6 +462,108 @@ export default function CreateHabitScreen() {
                   }
                 )}
               </View>
+            </View>
+
+            {/* Reminder */}
+            <View style={styles.inputGroup}>
+              <View style={styles.reminderHeader}>
+                <View
+                  style={
+                    styles.reminderHeaderContent
+                  }
+                >
+                  <Text style={styles.label}>
+                    Reminder
+                  </Text>
+
+                  <Text
+                    style={
+                      styles.reminderDescription
+                    }
+                  >
+                    Get notified when it's time
+                    to complete this habit
+                  </Text>
+                </View>
+
+                <Pressable
+                  onPress={() =>
+                    setReminderEnabled(
+                      !reminderEnabled
+                    )
+                  }
+                  style={[
+                    styles.switch,
+                    reminderEnabled &&
+                      styles.switchActive,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.switchThumb,
+                      reminderEnabled &&
+                        styles.switchThumbActive,
+                    ]}
+                  />
+                </Pressable>
+              </View>
+
+              {reminderEnabled && (
+                <View style={styles.reminderOptions}>
+                  <Text
+                    style={styles.reminderTimeLabel}
+                  >
+                    Reminder Time
+                  </Text>
+
+                  <View
+                    style={
+                      styles.reminderTimeList
+                    }
+                  >
+                    {REMINDER_OPTIONS.map(
+                      (option) => {
+                        const isSelected =
+                          reminderHour ===
+                            option.hour &&
+                          reminderMinute ===
+                            option.minute;
+
+                        return (
+                          <Pressable
+                            key={option.label}
+                            onPress={() => {
+                              setReminderHour(
+                                option.hour
+                              );
+                              setReminderMinute(
+                                option.minute
+                              );
+                            }}
+                            style={({ pressed }) => [
+                              styles.reminderTimeOption,
+                              isSelected &&
+                                styles.reminderTimeOptionSelected,
+                              pressed &&
+                                styles.reminderTimeOptionPressed,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.reminderTimeText,
+                                isSelected &&
+                                  styles.reminderTimeTextSelected,
+                              ]}
+                            >
+                              {option.label}
+                            </Text>
+                          </Pressable>
+                        );
+                      }
+                    )}
+                  </View>
+                </View>
+              )}
             </View>
           </View>
 
@@ -433,6 +736,109 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#64748B',
   },
+
+  /* Reminder */
+
+  reminderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 16,
+  },
+
+  reminderHeaderContent: {
+    flex: 1,
+    paddingRight: 16,
+  },
+
+  reminderDescription: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 4,
+    lineHeight: 18,
+  },
+
+  switch: {
+    width: 52,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#CBD5E1',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+
+  switchActive: {
+    backgroundColor: '#2563EB',
+  },
+
+  switchThumb: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+  },
+
+  switchThumbActive: {
+    alignSelf: 'flex-end',
+  },
+
+  reminderOptions: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 16,
+    marginTop: 2,
+  },
+
+  reminderTimeLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#334155',
+    marginBottom: 12,
+  },
+
+  reminderTimeList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+
+  reminderTimeOption: {
+    minWidth: 70,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+  },
+
+  reminderTimeOptionSelected: {
+    borderColor: '#2563EB',
+    backgroundColor: '#EFF6FF',
+  },
+
+  reminderTimeOptionPressed: {
+    opacity: 0.7,
+  },
+
+  reminderTimeText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#475569',
+  },
+
+  reminderTimeTextSelected: {
+    color: '#2563EB',
+  },
+
+  /* Save */
 
   saveButton: {
     backgroundColor: '#0F172A',
