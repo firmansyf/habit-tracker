@@ -35,15 +35,7 @@ type HabitStore = {
   ) => void;
 };
 
-const initialHabits: Habit[] = [
-  {
-    id: '1',
-    name: 'Drink Water',
-    description: '8 glasses',
-    completed: true,
-    completedDates: [],
-  },
-];
+const initialHabits: Habit[] = [];
 
 export const useHabitStore = create<HabitStore>()(
   persist(
