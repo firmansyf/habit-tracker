@@ -7,9 +7,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHabitStore } from '@/store/habit-store';
-import { getCurrentStreak, getLastSevenDays, getToday, } from '@/utils/date';
 
-
+import {
+  getCurrentStreak,
+  getLastSevenDays,
+  getToday,
+  isScheduledDate,
+} from '@/utils/date';
 
 export default function StatisticsScreen() {
   const habits = useHabitStore(
@@ -18,43 +22,111 @@ export default function StatisticsScreen() {
 
   const today = getToday();
 
-  const completedToday = habits.filter(
-    (habit) =>
+   const scheduledHabits = habits.filter(
+      (habit) =>
+        isScheduledDate(
+          today,
+          habit.frequency ?? 'daily'
+        )
+    );
+
+  /*
+   * Habits yang memang dijadwalkan
+   * untuk hari ini.
+   */
+  const scheduledHabitsToday =
+    habits.filter((habit) =>
+      isScheduledDate(
+        today,
+        habit.frequency ?? 'daily'
+      )
+    );
+
+  /*
+   * Jumlah habit yang selesai hari ini.
+   */
+  const completedToday =
+    scheduledHabits.filter((habit) =>
       habit.completedDates?.includes(today)
-  ).length;
+    ).length;
 
-  const totalHabits = habits.length;
+  /*
+   * Total habit yang seharusnya
+   * dikerjakan hari ini.
+   */
+  const totalHabits =
+    scheduledHabitsToday.length;
 
-  const allCompletedDates = habits.flatMap(
-    (habit) => habit.completedDates ?? []
-  );
+  /*
+   * Semua tanggal completion.
+   */
+  const allCompletedDates =
+    habits.flatMap(
+      (habit) =>
+        habit.completedDates ?? []
+    );
 
-  const currentStreak = getCurrentStreak(
-    [...new Set(allCompletedDates)]
-  );
+  const currentStreak =
+    getCurrentStreak(
+      [
+        ...new Set(
+          allCompletedDates
+        ),
+      ]
+    );
 
+  /*
+   * Completion rate hari ini.
+   */
   const completionRate =
     totalHabits === 0
       ? 0
       : Math.round(
-          (completedToday / totalHabits) * 100
+          (completedToday /
+            totalHabits) *
+            100
         );
 
-  const lastSevenDays = getLastSevenDays();
+  const lastSevenDays =
+    getLastSevenDays();
 
+  /*
+   * Menghitung completion untuk
+   * tanggal tertentu.
+   *
+   * Hanya habit yang scheduled
+   * pada tanggal tersebut yang dihitung.
+   */
   const getCompletedCount = (
     date: string
   ) => {
-    return habits.filter((habit) =>
-      habit.completedDates?.includes(date)
+    const scheduledHabits =
+      habits.filter((habit) =>
+        isScheduledDate(
+          date,
+          habit.frequency ?? 'daily'
+        )
+      );
+
+    return scheduledHabits.filter(
+      (habit) =>
+        habit.completedDates?.includes(
+          date
+        )
     ).length;
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={styles.container}
+    >
       <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={
+          styles.content
+        }
+        showsVerticalScrollIndicator={
+          false
+        }
       >
         <Text style={styles.title}>
           Statistics
@@ -64,38 +136,60 @@ export default function StatisticsScreen() {
           Track your habit progress
         </Text>
 
+        {/* Current Streak */}
         <View style={styles.streakCard}>
-          <Text style={styles.streakEmoji}>
+          <Text
+            style={styles.streakEmoji}
+          >
             🔥
           </Text>
 
           <View>
-            <Text style={styles.streakNumber}>
-              {currentStreak} { currentStreak === 1 ? 'Day' : 'Days' }
+            <Text
+              style={styles.streakNumber}
+            >
+              {currentStreak}{' '}
+              {currentStreak === 1
+                ? 'Day'
+                : 'Days'}
             </Text>
 
-            <Text style={styles.streakLabel}>
+            <Text
+              style={styles.streakLabel}
+            >
               Current Streak
             </Text>
           </View>
         </View>
 
         {/* Completion Rate */}
-        <View style={styles.progressCard}>
+        <View
+          style={styles.progressCard}
+        >
           <Text style={styles.cardLabel}>
             Today's Progress
           </Text>
 
-          <Text style={styles.percentage}>
+          <Text
+            style={styles.percentage}
+          >
             {completionRate}%
           </Text>
 
-          <Text style={styles.completedText}>
-            {completedToday} of {totalHabits}{' '}
-            habits completed
+          <Text
+            style={styles.completedText}
+          >
+            {completedToday} of{' '}
+            {totalHabits} habits
+            {' '}
+            completed
           </Text>
 
-          <View style={styles.progressBackground}>
+          <View
+            style={
+              styles.progressBackground
+            }
+          >
             <View
               style={[
                 styles.progressFill,
@@ -109,77 +203,119 @@ export default function StatisticsScreen() {
 
         {/* Summary */}
         <View style={styles.summaryRow}>
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryEmoji}>
+          <View
+            style={styles.summaryCard}
+          >
+            <Text
+              style={styles.summaryEmoji}
+            >
               ✅
             </Text>
 
-            <Text style={styles.summaryNumber}>
+            <Text
+              style={styles.summaryNumber}
+            >
               {completedToday}
             </Text>
 
-            <Text style={styles.summaryLabel}>
+            <Text
+              style={styles.summaryLabel}
+            >
               Completed
             </Text>
           </View>
 
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryEmoji}>
+          <View
+            style={styles.summaryCard}
+          >
+            <Text
+              style={styles.summaryEmoji}
+            >
               📋
             </Text>
 
-            <Text style={styles.summaryNumber}>
+            <Text
+              style={styles.summaryNumber}
+            >
               {totalHabits}
             </Text>
 
-            <Text style={styles.summaryLabel}>
-              Total Habits
+            <Text
+              style={styles.summaryLabel}
+            >
+              Today's Habits
             </Text>
           </View>
         </View>
 
         {/* Last 7 Days */}
-        <View style={styles.historyCard}>
-          <Text style={styles.historyTitle}>
+        <View
+          style={styles.historyCard}
+        >
+          <Text
+            style={styles.historyTitle}
+          >
             Last 7 Days
           </Text>
 
           <View style={styles.daysRow}>
-            {lastSevenDays.map((date) => {
-              const completedCount =
-                getCompletedCount(date);
+            {lastSevenDays.map(
+              (date) => {
+                const completedCount =
+                  getCompletedCount(
+                    date
+                  );
 
-              const day = new Date(
-                `${date}T00:00:00`
-              ).toLocaleDateString('en-US', {
-                weekday: 'short',
-              });
+                const day =
+                  new Date(
+                    `${date}T00:00:00`
+                  ).toLocaleDateString(
+                    'en-US',
+                    {
+                      weekday: 'short',
+                    }
+                  );
 
-              return (
-                <View
-                  key={date}
-                  style={styles.dayItem}
-                >
-                  <Text style={styles.dayLabel}>
-                    {day.charAt(0)}
-                  </Text>
-
+                return (
                   <View
-                    style={[
-                      styles.dayCircle,
-                      completedCount > 0 &&
-                        styles.dayCircleCompleted,
-                    ]}
+                    key={date}
+                    style={
+                      styles.dayItem
+                    }
                   >
-                    {completedCount > 0 && (
-                      <Text style={styles.dayCheck}>
-                        {completedCount}
-                      </Text>
-                    )}
+                    <Text
+                      style={
+                        styles.dayLabel
+                      }
+                    >
+                      {day.charAt(0)}
+                    </Text>
+
+                    <View
+                      style={[
+                        styles.dayCircle,
+                        completedCount >
+                          0 &&
+                          styles.dayCircleCompleted,
+                      ]}
+                    >
+                      {completedCount >
+                        0 && (
+                        <Text
+                          style={
+                            styles.dayCheck
+                          }
+                        >
+                          {
+                            completedCount
+                          }
+                        </Text>
+                      )}
+                    </View>
                   </View>
-                </View>
-              );
-            })}
+                );
+              }
+            )}
           </View>
         </View>
       </ScrollView>
@@ -317,7 +453,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
 
   dayCircleCompleted: {
     backgroundColor: '#16A34A',
