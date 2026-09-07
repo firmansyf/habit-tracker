@@ -139,6 +139,14 @@ export default function HomeScreen() {
                 item.name
               )
             }
+            onDetail={() =>
+              router.push({
+                pathname: '/habit/[id]',
+                params: {
+                  id: item.id,
+                },
+              })
+            }
           />
         )}
         ListFooterComponent={

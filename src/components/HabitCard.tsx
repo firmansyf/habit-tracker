@@ -1,8 +1,8 @@
 import {
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 
 import type { Habit } from '@/store/habit-store';
@@ -12,6 +12,7 @@ type HabitCardProps = {
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onDetail: () => void;
 };
 
 export default function HabitCard({
@@ -19,9 +20,15 @@ export default function HabitCard({
   onToggle,
   onEdit,
   onDelete,
+  onDetail,
 }: HabitCardProps) {
   return (
-    <View style={styles.habitCard}>
+    <Pressable
+      style={({ pressed }) => [
+        styles.habitCard,
+        pressed && styles.cardPressed,
+      ]}
+    >
       <Pressable
         style={({ pressed }) => [
           styles.habitMain,
@@ -89,8 +96,17 @@ export default function HabitCard({
             🗑️
           </Text>
         </Pressable>
+
+        <Pressable
+          style={styles.detailButton}
+          onPress={onDetail}
+        >
+          <Text style={styles.detailButtonText}>
+            👁️
+          </Text>
+        </Pressable>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -178,4 +194,22 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 18,
   },
+
+  cardPressed: {
+    opacity: 0.8,
+  },
+
+  detailButton: {
+    backgroundColor: '#EFF6FF',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+  },
+
+  detailButtonText: {
+    color: '#2563EB',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
 });
