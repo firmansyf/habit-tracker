@@ -1,12 +1,14 @@
+import { getToday } from '@/utils/date';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-export type Habit = {
+type Habit = {
   id: string;
   name: string;
   description: string;
   completed: boolean;
+  completedDates: string[];
 };
 
 type HabitStore = {
@@ -34,18 +36,7 @@ const initialHabits: Habit[] = [
     name: 'Drink Water',
     description: '8 glasses',
     completed: true,
-  },
-  {
-    id: '2',
-    name: 'Read Book',
-    description: '20 minutes',
-    completed: false,
-  },
-  {
-    id: '3',
-    name: 'Learn Coding',
-    description: '1 hour',
-    completed: false,
+    completedDates: [],
   },
 ];
 
@@ -63,21 +54,41 @@ export const useHabitStore = create<HabitStore>()(
               name,
               description,
               completed: false,
+              completedDates: []
             },
           ],
         })),
 
       toggleHabit: (id) =>
-        set((state) => ({
-          habits: state.habits.map((habit) =>
-            habit.id === id
-              ? {
-                  ...habit,
-                  completed: !habit.completed,
-                }
-              : habit
-          ),
-        })),
+        set((state) => {
+          const today = getToday();
+
+          return {
+            habits: state.habits.map((habit) => {
+              if (habit.id !== id) {
+                return habit;
+              }
+
+              const isCompletedToday =
+                habit.completedDates.includes(today);
+
+              return {
+                ...habit,
+
+                completed: !isCompletedToday,
+
+                completedDates: isCompletedToday
+                  ? habit.completedDates.filter(
+                      (date) => date !== today
+                    )
+                  : [
+                      ...habit.completedDates,
+                      today,
+                    ],
+              };
+            }),
+          };
+      }),
 
       deleteHabit: (id) =>
         set((state) => ({
