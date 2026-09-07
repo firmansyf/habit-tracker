@@ -78,3 +78,36 @@ export const getCompletedCountForDate = (
       completedDate === date
   ).length;
 };
+
+export const formatDate = (
+  year: number,
+  month: number,
+  day: number
+): string => {
+  const monthString = String(month + 1).padStart(2, '0');
+  const dayString = String(day).padStart(2, '0');
+
+  return `${year}-${monthString}-${dayString}`;
+};
+
+export const getDaysInMonth = (
+  year: number,
+  month: number
+): number => {
+  return new Date(
+    year,
+    month + 1,
+    0
+  ).getDate();
+};
+
+export const getFirstDayOfMonth = (
+  year: number,
+  month: number
+): number => {
+  return new Date(
+    year,
+    month,
+    1
+  ).getDay();
+};
