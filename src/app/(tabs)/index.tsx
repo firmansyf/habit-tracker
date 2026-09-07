@@ -12,6 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHabitStore } from '@/store/habit-store';
 import { getCurrentStreak } from '@/utils/date';
 
+import EmptyState from '@/components/EmptyState';
+import HabitCard from '@/components/HabitCard';
+import ProgressCard from '@/components/ProgressCard';
+import StreakCard from '@/components/StreakCard';
+
 export default function HomeScreen() {
   const router = useRouter();
 
@@ -84,106 +89,34 @@ export default function HomeScreen() {
             </View>
 
             {/* Streak Card */}
-            <View style={styles.streakCard}>
-              <Text style={styles.streakEmoji}>
-                🔥
-              </Text>
-
-              <View>
-                <Text style={styles.streakNumber}>
-                  {currentStreak} { currentStreak === 1 ? 'Day' : 'Days' }
-                </Text>
-
-                <Text style={styles.streakLabel}>
-                  Current Streak
-                </Text>
-              </View>
-            </View>
+           <StreakCard currentStreak={currentStreak} />
 
             {/* Today's Habits */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                Today's Habits
-              </Text>
-
-              <Text style={styles.progress}>
-                {completedHabits} / {totalHabits}
-              </Text>
-            </View>
+            <ProgressCard
+              completedHabits={completedHabits}
+              totalHabits={totalHabits}
+            />
           </View>
         }
         renderItem={({ item }) => (
-         <View style={styles.habitCard}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.habitMain,
-              pressed && styles.habitCardPressed,
-            ]}
-            onPress={() => toggleHabit(item.id)}
-          >
-            {/* Checkbox */}
-            <View
-              style={[
-                styles.checkbox,
-                item.completed && styles.checkboxCompleted,
-              ]}
-            >
-              {item.completed && (
-                <Text style={styles.checkmark}>
-                  ✓
-                </Text>
-              )}
-            </View>
-
-            {/* Habit Information */}
-            <View style={styles.habitInfo}>
-              <Text
-                style={[
-                  styles.habitName,
-                  item.completed && styles.habitCompleted,
-                ]}
-              >
-                {item.name}
-              </Text>
-
-              <Text style={styles.habitDescription}>
-                {item.description}
-              </Text>
-            </View>
-          </Pressable>
-
-          <View style={styles.actions}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  pressed && styles.actionButtonPressed,
-                ]}
-                onPress={() =>
-                  router.push({
-                    pathname: '/create',
-                    params: {
-                      id: item.id,
-                    },
-                  })
-                }
-              >
-                <Text style={styles.actionButtonText}>✏️</Text>
-              </Pressable>
-
-              <Pressable
-                style={({ pressed }) => [
-                  styles.actionButton,
-                  pressed && styles.actionButtonPressed,
-                ]}
-                onPress={() =>
-                  handleDeleteHabit(item.id, item.name)
-                }
-              >
-                <Text style={styles.actionButtonText}>🗑️</Text>
-              </Pressable>
-            </View>
-          
-          </View>
+         <HabitCard
+            habit={item}
+            onToggle={() => toggleHabit(item.id)}
+            onEdit={() =>
+              router.push({
+                pathname: '/create',
+                params: {
+                  id: item.id,
+                },
+              })
+            }
+            onDelete={() =>
+              handleDeleteHabit(
+                item.id,
+                item.name
+              )
+            }
+          />
         )}
         ListFooterComponent={
           <Pressable
@@ -198,6 +131,12 @@ export default function HomeScreen() {
             </Text>
           </Pressable>
         }
+         ListEmptyComponent={
+          <EmptyState
+            onAddHabit={() => router.push('/create')}
+          />
+        }
+
       />
     </SafeAreaView>
   );
@@ -248,106 +187,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  streakCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF7ED',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 28,
-  },
-
-  streakEmoji: {
-    fontSize: 36,
-    marginRight: 16,
-  },
-
-  streakNumber: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#9A3412',
-  },
-
-  streakLabel: {
-    fontSize: 14,
-    color: '#C2410C',
-    marginTop: 2,
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-
-  progress: {
-    fontSize: 14,
-    color: '#64748B',
-  },
-
-  habitCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-  },
-
-  habitCardPressed: {
-    opacity: 0.7,
-  },
-
-  checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#CBD5E1',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-
-  checkboxCompleted: {
-    backgroundColor: '#16A34A',
-    borderColor: '#16A34A',
-  },
-
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '700',
-  },
-
-  habitInfo: {
-    flex: 1,
-  },
-
-  habitName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#0F172A',
-  },
-
-  habitCompleted: {
-    textDecorationLine: 'line-through',
-    color: '#94A3B8',
-  },
-
-  habitDescription: {
-    fontSize: 14,
-    color: '#64748B',
-    marginTop: 4,
-  },
-
   addButton: {
     backgroundColor: '#0F172A',
     borderRadius: 16,
@@ -364,12 +203,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-  },
-
-  habitMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
   },
 
   deleteButton: {
@@ -389,25 +222,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
 
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-
-  actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  actionButtonPressed: {
-    opacity: 0.5,
-  },
-
-  actionButtonText: {
-    fontSize: 18,
-  },
 });
