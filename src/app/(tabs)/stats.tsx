@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHabitStore } from '@/store/habit-store';
-import { getToday } from '@/utils/date';
+import { getCurrentStreak, getToday } from '@/utils/date';
 
 
 const getLastSevenDays = () => {
@@ -39,6 +39,14 @@ export default function StatisticsScreen() {
 
   const totalHabits = habits.length;
 
+  const allCompletedDates = habits.flatMap(
+    (habit) => habit.completedDates ?? []
+  );
+
+  const currentStreak = getCurrentStreak(
+    [...new Set(allCompletedDates)]
+  );
+
   const completionRate =
     totalHabits === 0
       ? 0
@@ -58,6 +66,22 @@ export default function StatisticsScreen() {
         <Text style={styles.subtitle}>
           Track your habit progress
         </Text>
+
+        <View style={styles.streakCard}>
+          <Text style={styles.streakEmoji}>
+            🔥
+          </Text>
+
+          <View>
+            <Text style={styles.streakNumber}>
+              {currentStreak} { currentStreak === 1 ? 'Day' : 'Days' }
+            </Text>
+
+            <Text style={styles.streakLabel}>
+              Current Streak
+            </Text>
+          </View>
+        </View>
 
         {/* Completion Rate */}
         <View style={styles.progressCard}>
@@ -309,5 +333,31 @@ const styles = StyleSheet.create({
   dayCheck: {
     color: '#FFFFFF',
     fontWeight: '700',
+  },
+
+  streakCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF7ED',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+  },
+
+  streakEmoji: {
+    fontSize: 32,
+    marginRight: 16,
+  },
+
+  streakNumber: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#9A3412',
+  },
+
+  streakLabel: {
+    fontSize: 14,
+    color: '#C2410C',
+    marginTop: 2,
   },
 });

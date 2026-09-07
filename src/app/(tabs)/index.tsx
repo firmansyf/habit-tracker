@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHabitStore } from '@/store/habit-store';
+import { getCurrentStreak } from '@/utils/date';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -24,6 +25,14 @@ export default function HomeScreen() {
   ).length;
 
   const totalHabits = habits.length;
+
+  const allCompletedDates = habits.flatMap(
+    (habit) => habit.completedDates ?? []
+  );
+
+  const currentStreak = getCurrentStreak(
+    [...new Set(allCompletedDates)]
+  );
 
   const handleDeleteHabit = (
     id: string,
@@ -82,7 +91,7 @@ export default function HomeScreen() {
 
               <View>
                 <Text style={styles.streakNumber}>
-                  7 Days
+                  {currentStreak} { currentStreak === 1 ? 'Day' : 'Days' }
                 </Text>
 
                 <Text style={styles.streakLabel}>
