@@ -5,7 +5,7 @@ import {
   persist,
 } from 'zustand/middleware';
 
-import { getToday } from '@/utils/date';
+import { getToday, isScheduledDate, } from '@/utils/date';
 
 export type HabitFrequency =
   | 'daily'
@@ -79,39 +79,55 @@ export const useHabitStore = create<HabitStore>()(
         })),
 
       toggleHabit: (id) =>
-        set((state) => {
-          const today = getToday();
+      set((state) => {
+        const today = getToday();
 
-          return {
-            habits: state.habits.map((habit) => {
-              if (habit.id !== id) {
-                return habit;
-              }
+        return {
+          habits: state.habits.map((habit) => {
+            if (habit.id !== id) {
+              return habit;
+            }
 
-              const isCompletedToday =
-                habit.completedDates.includes(
-                  today
-                );
+            const frequency =
+              habit.frequency ?? 'daily';
 
-              const completedDates =
-                isCompletedToday
-                  ? habit.completedDates.filter(
-                      (date) => date !== today
-                    )
-                  : [
-                      ...habit.completedDates,
-                      today,
-                    ];
+            const isScheduled =
+              isScheduledDate(
+                today,
+                frequency
+              );
 
-              return {
-                ...habit,
-                completed:
-                  !isCompletedToday,
-                completedDates,
-              };
-            }),
-          };
-        }),
+            // Jangan izinkan completion
+            // pada hari yang tidak dijadwalkan.
+            if (!isScheduled) {
+              return habit;
+            }
+
+            const isCompletedToday =
+              habit.completedDates.includes(
+                today
+              );
+
+            const completedDates =
+              isCompletedToday
+                ? habit.completedDates.filter(
+                    (date) =>
+                      date !== today
+                  )
+                : [
+                    ...habit.completedDates,
+                    today,
+                  ];
+
+            return {
+              ...habit,
+              completed:
+                !isCompletedToday,
+              completedDates,
+            };
+          }),
+        };
+      }),
 
       deleteHabit: (id) =>
         set((state) => ({

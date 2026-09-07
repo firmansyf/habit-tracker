@@ -10,7 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHabitStore } from '@/store/habit-store';
-import { getCurrentStreak } from '@/utils/date';
+import {
+  getCurrentStreak,
+  getToday,
+  isScheduledDate,
+} from '@/utils/date';
 
 import {
   getGreeting,
@@ -36,11 +40,23 @@ export default function HomeScreen() {
   
   const deleteHabit = useHabitStore((state) => state.deleteHabit);
 
-  const completedHabits = habits.filter(
-    (habit) => habit.completed
-  ).length;
+  const today = getToday();
 
-  const totalHabits = habits.length;
+  const scheduledHabits = habits.filter(
+    (habit) =>
+      isScheduledDate(
+        today,
+        habit.frequency ?? 'daily'
+      )
+  );
+
+  const completedHabits =
+    scheduledHabits.filter(
+      (habit) =>
+        habit.completedDates.includes(today)
+    ).length;
+
+  const totalHabits = scheduledHabits.length;
 
   const allCompletedDates = habits.flatMap(
     (habit) => habit.completedDates ?? []

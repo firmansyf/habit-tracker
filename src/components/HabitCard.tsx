@@ -7,6 +7,11 @@ import {
 
 import type { Habit } from '@/store/habit-store';
 
+import {
+  getToday,
+  isScheduledDate,
+} from '@/utils/date';
+
 type HabitCardProps = {
   habit: Habit;
   onToggle: () => void;
@@ -22,33 +27,51 @@ export default function HabitCard({
   onDelete,
   onDetail,
 }: HabitCardProps) {
+  const today = getToday();
+
+  const isScheduledToday =
+    isScheduledDate(
+      today,
+      habit.frequency ?? 'daily'
+    );
+
   return (
-    <Pressable
-      style={({ pressed }) => [
+    <View
+      style={[
         styles.habitCard,
-        pressed && styles.cardPressed,
+        !isScheduledToday &&
+          styles.habitCardDisabled,
       ]}
     >
       <Pressable
         style={({ pressed }) => [
           styles.habitMain,
-          pressed && styles.habitCardPressed,
+          pressed &&
+            isScheduledToday &&
+            styles.habitCardPressed,
         ]}
         onPress={onToggle}
+        disabled={!isScheduledToday}
       >
         {/* Checkbox */}
         <View
           style={[
             styles.checkbox,
+
             habit.completed &&
+              isScheduledToday &&
               styles.checkboxCompleted,
+
+            !isScheduledToday &&
+              styles.checkboxDisabled,
           ]}
         >
-          {habit.completed && (
-            <Text style={styles.checkmark}>
-              ✓
-            </Text>
-          )}
+          {habit.completed &&
+            isScheduledToday && (
+              <Text style={styles.checkmark}>
+                ✓
+              </Text>
+            )}
         </View>
 
         {/* Habit Information */}
@@ -56,21 +79,44 @@ export default function HabitCard({
           <Text
             style={[
               styles.habitName,
+
               habit.completed &&
+                isScheduledToday &&
                 styles.habitCompleted,
+
+              !isScheduledToday &&
+                styles.habitNameDisabled,
             ]}
           >
             {habit.name}
           </Text>
 
-          <Text style={styles.habitDescription}>
+          <Text
+            style={[
+              styles.habitDescription,
+              !isScheduledToday &&
+                styles.habitDescriptionDisabled,
+            ]}
+          >
             {habit.description}
           </Text>
+
+          {/* Not Scheduled Label */}
+          {!isScheduledToday && (
+            <Text
+              style={
+                styles.notScheduledText
+              }
+            >
+              Not scheduled today
+            </Text>
+          )}
         </View>
       </Pressable>
 
       {/* Actions */}
       <View style={styles.actions}>
+        {/* Edit */}
         <Pressable
           style={({ pressed }) => [
             styles.actionButton,
@@ -79,11 +125,14 @@ export default function HabitCard({
           ]}
           onPress={onEdit}
         >
-          <Text style={styles.actionButtonText}>
+          <Text
+            style={styles.actionButtonText}
+          >
             ✏️
           </Text>
         </Pressable>
 
+        {/* Delete */}
         <Pressable
           style={({ pressed }) => [
             styles.actionButton,
@@ -92,21 +141,30 @@ export default function HabitCard({
           ]}
           onPress={onDelete}
         >
-          <Text style={styles.actionButtonText}>
+          <Text
+            style={styles.actionButtonText}
+          >
             🗑️
           </Text>
         </Pressable>
 
+        {/* Detail */}
         <Pressable
-          style={styles.detailButton}
+          style={({ pressed }) => [
+            styles.detailButton,
+            pressed &&
+              styles.actionButtonPressed,
+          ]}
           onPress={onDetail}
         >
-          <Text style={styles.detailButtonText}>
+          <Text
+            style={styles.detailButtonText}
+          >
             👁️
           </Text>
         </Pressable>
       </View>
-    </Pressable>
+    </View>
   );
 }
 
@@ -118,6 +176,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
+  },
+
+  /*
+   * Card ketika habit tidak dijadwalkan
+   * hari ini.
+   */
+  habitCardDisabled: {
+    backgroundColor: '#F1F5F9',
   },
 
   habitCardPressed: {
@@ -146,6 +212,15 @@ const styles = StyleSheet.create({
     borderColor: '#16A34A',
   },
 
+  /*
+   * Checkbox untuk habit yang belum
+   * dijadwalkan hari ini.
+   */
+  checkboxDisabled: {
+    backgroundColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
+  },
+
   checkmark: {
     color: '#FFFFFF',
     fontSize: 18,
@@ -167,10 +242,32 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
   },
 
+  /*
+   * Nama habit yang tidak dijadwalkan.
+   */
+  habitNameDisabled: {
+    color: '#94A3B8',
+  },
+
   habitDescription: {
     fontSize: 14,
     color: '#64748B',
     marginTop: 4,
+  },
+
+  habitDescriptionDisabled: {
+    color: '#94A3B8',
+  },
+
+  /*
+   * Label kecil untuk menunjukkan
+   * bahwa habit tidak tersedia hari ini.
+   */
+  notScheduledText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginTop: 6,
   },
 
   actions: {
@@ -195,10 +292,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
 
-  cardPressed: {
-    opacity: 0.8,
-  },
-
   detailButton: {
     backgroundColor: '#EFF6FF',
     paddingVertical: 10,
@@ -211,5 +304,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-
 });
