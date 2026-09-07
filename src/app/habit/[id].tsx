@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHabitStore } from '@/store/habit-store';
+
 import {
   formatDate,
   getCurrentStreak,
@@ -22,6 +23,8 @@ import {
   getFirstDayOfMonth,
   getToday,
 } from '@/utils/date';
+
+import { isScheduledDate } from '@/utils/frequency';
 
 const MONTH_NAMES = [
   'January',
@@ -48,6 +51,22 @@ const DAY_NAMES = [
   'Sat',
 ];
 
+const getFrequencyLabel = (
+  frequency?: string
+): string => {
+  switch (frequency) {
+    case 'weekdays':
+      return 'Weekdays';
+
+    case 'weekends':
+      return 'Weekends';
+
+    case 'daily':
+    default:
+      return 'Every Day';
+  }
+};
+
 export default function HabitDetailScreen() {
   const router = useRouter();
 
@@ -55,12 +74,13 @@ export default function HabitDetailScreen() {
     id: string;
   }>();
 
-  const [calendarDate, setCalendarDate] = useState(
-    new Date()
-  );
+  const [calendarDate, setCalendarDate] =
+    useState(new Date());
 
   const habit = useHabitStore((state) =>
-    state.habits.find((item) => item.id === id)
+    state.habits.find(
+      (item) => item.id === id
+    )
   );
 
   const deleteHabit = useHabitStore(
@@ -86,7 +106,9 @@ export default function HabitDetailScreen() {
               onPress={() => router.back()}
               style={styles.backButton}
             >
-              <Text style={styles.backButtonText}>
+              <Text
+                style={styles.backButtonText}
+              >
                 Go Back
               </Text>
             </Pressable>
@@ -102,6 +124,12 @@ export default function HabitDetailScreen() {
 
   const completedCount =
     habit.completedDates.length;
+
+  const frequency =
+    habit.frequency ?? 'daily';
+
+  const frequencyLabel =
+    getFrequencyLabel(frequency);
 
   const calendarYear =
     calendarDate.getFullYear();
@@ -181,7 +209,9 @@ export default function HabitDetailScreen() {
 
       <SafeAreaView style={styles.container}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={
+            styles.content
+          }
           showsVerticalScrollIndicator={false}
         >
           {/* Back */}
@@ -201,12 +231,32 @@ export default function HabitDetailScreen() {
             </Text>
 
             <Text style={styles.description}>
-              {habit.description || 'No description'}
+              {habit.description ||
+                'No description'}
             </Text>
+
+            {/* Frequency */}
+            <View
+              style={styles.frequencyBadge}
+            >
+              <Text
+                style={styles.frequencyBadgeLabel}
+              >
+                Frequency
+              </Text>
+
+              <Text
+                style={styles.frequencyBadgeValue}
+              >
+                {frequencyLabel}
+              </Text>
+            </View>
           </View>
 
           {/* Statistics */}
-          <View style={styles.statsContainer}>
+          <View
+            style={styles.statsContainer}
+          >
             <View style={styles.statCard}>
               <Text style={styles.statIcon}>
                 🔥
@@ -237,23 +287,35 @@ export default function HabitDetailScreen() {
           </View>
 
           {/* Calendar */}
-          <View style={styles.calendarSection}>
+          <View
+            style={styles.calendarSection}
+          >
             <Text style={styles.sectionTitle}>
               Completion Calendar
             </Text>
 
             {/* Calendar Header */}
-            <View style={styles.calendarHeader}>
+            <View
+              style={styles.calendarHeader}
+            >
               <Pressable
-                onPress={handlePreviousMonth}
+                onPress={
+                  handlePreviousMonth
+                }
                 style={styles.monthButton}
               >
-                <Text style={styles.monthButtonText}>
+                <Text
+                  style={
+                    styles.monthButtonText
+                  }
+                >
                   ‹
                 </Text>
               </Pressable>
 
-              <Text style={styles.monthTitle}>
+              <Text
+                style={styles.monthTitle}
+              >
                 {MONTH_NAMES[calendarMonth]}{' '}
                 {calendarYear}
               </Text>
@@ -262,7 +324,11 @@ export default function HabitDetailScreen() {
                 onPress={handleNextMonth}
                 style={styles.monthButton}
               >
-                <Text style={styles.monthButtonText}>
+                <Text
+                  style={
+                    styles.monthButtonText
+                  }
+                >
                   ›
                 </Text>
               </Pressable>
@@ -275,7 +341,11 @@ export default function HabitDetailScreen() {
                   key={day}
                   style={styles.dayHeader}
                 >
-                  <Text style={styles.dayHeaderText}>
+                  <Text
+                    style={
+                      styles.dayHeaderText
+                    }
+                  >
                     {day}
                   </Text>
                 </View>
@@ -283,7 +353,10 @@ export default function HabitDetailScreen() {
             </View>
 
             {/* Calendar Grid */}
-            <View style={styles.calendarGrid}>
+            <View
+              style={styles.calendarGrid}
+            >
+              {/* Empty cells before first day */}
               {Array.from({
                 length: firstDay,
               }).map((_, index) => (
@@ -293,6 +366,7 @@ export default function HabitDetailScreen() {
                 />
               ))}
 
+              {/* Calendar days */}
               {Array.from({
                 length: daysInMonth,
               }).map((_, index) => {
@@ -312,6 +386,12 @@ export default function HabitDetailScreen() {
                 const isToday =
                   date === today;
 
+                const isScheduled =
+                  isScheduledDate(
+                    date,
+                    frequency
+                  );
+
                 return (
                   <View
                     key={date}
@@ -320,8 +400,13 @@ export default function HabitDetailScreen() {
                     <View
                       style={[
                         styles.dayCircle,
+
+                        !isScheduled &&
+                          styles.unscheduledCircle,
+
                         isToday &&
                           styles.todayCircle,
+
                         isCompleted &&
                           styles.completedCircle,
                       ]}
@@ -329,8 +414,13 @@ export default function HabitDetailScreen() {
                       <Text
                         style={[
                           styles.dayText,
+
+                          !isScheduled &&
+                            styles.unscheduledText,
+
                           isToday &&
                             styles.todayText,
+
                           isCompleted &&
                             styles.completedText,
                         ]}
@@ -345,7 +435,9 @@ export default function HabitDetailScreen() {
 
             {/* Legend */}
             <View style={styles.legend}>
-              <View style={styles.legendItem}>
+              <View
+                style={styles.legendItem}
+              >
                 <View
                   style={[
                     styles.legendCircle,
@@ -364,7 +456,9 @@ export default function HabitDetailScreen() {
                 </Text>
               </View>
 
-              <View style={styles.legendItem}>
+              <View
+                style={styles.legendItem}
+              >
                 <View
                   style={[
                     styles.legendCircle,
@@ -376,17 +470,37 @@ export default function HabitDetailScreen() {
                   Today
                 </Text>
               </View>
+
+              <View
+                style={styles.legendItem}
+              >
+                <View
+                  style={[
+                    styles.legendCircle,
+                    styles.unscheduledCircle,
+                  ]}
+                />
+
+                <Text style={styles.legendText}>
+                  Not scheduled
+                </Text>
+              </View>
             </View>
           </View>
 
           {/* Completion History */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
+            <Text
+              style={styles.sectionTitle}
+            >
               Completion History
             </Text>
 
-            {habit.completedDates.length === 0 ? (
-              <Text style={styles.emptyHistory}>
+            {habit.completedDates.length ===
+            0 ? (
+              <Text
+                style={styles.emptyHistory}
+              >
                 No completion history yet.
               </Text>
             ) : (
@@ -397,11 +511,19 @@ export default function HabitDetailScreen() {
                     key={date}
                     style={styles.historyItem}
                   >
-                    <Text style={styles.historyIcon}>
+                    <Text
+                      style={
+                        styles.historyIcon
+                      }
+                    >
                       ✓
                     </Text>
 
-                    <Text style={styles.historyDate}>
+                    <Text
+                      style={
+                        styles.historyDate
+                      }
+                    >
                       {date}
                     </Text>
                   </View>
@@ -414,11 +536,14 @@ export default function HabitDetailScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.editButton,
-                pressed && styles.buttonPressed,
+                pressed &&
+                  styles.buttonPressed,
               ]}
               onPress={handleEdit}
             >
-              <Text style={styles.editButtonText}>
+              <Text
+                style={styles.editButtonText}
+              >
                 Edit Habit
               </Text>
             </Pressable>
@@ -426,11 +551,16 @@ export default function HabitDetailScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.deleteButton,
-                pressed && styles.buttonPressed,
+                pressed &&
+                  styles.buttonPressed,
               ]}
               onPress={handleDelete}
             >
-              <Text style={styles.deleteButtonText}>
+              <Text
+                style={
+                  styles.deleteButtonText
+                }
+              >
                 Delete Habit
               </Text>
             </Pressable>
@@ -477,6 +607,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     color: '#64748B',
+  },
+
+  frequencyBadge: {
+    alignSelf: 'flex-start',
+    marginTop: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
+  frequencyBadgeLabel: {
+    fontSize: 13,
+    color: '#64748B',
+  },
+
+  frequencyBadgeValue: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#2563EB',
   },
 
   statsContainer: {
@@ -601,6 +754,14 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
 
+  unscheduledCircle: {
+    backgroundColor: '#F1F5F9',
+  },
+
+  unscheduledText: {
+    color: '#CBD5E1',
+  },
+
   completedCircle: {
     backgroundColor: '#DCFCE7',
   },
@@ -622,7 +783,8 @@ const styles = StyleSheet.create({
 
   legend: {
     flexDirection: 'row',
-    gap: 20,
+    flexWrap: 'wrap',
+    gap: 16,
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,

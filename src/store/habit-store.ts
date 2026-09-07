@@ -1,27 +1,36 @@
-import { getToday } from '@/utils/date';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import {
+  createJSONStorage,
+  persist,
+} from 'zustand/middleware';
+
+import { getToday } from '@/utils/date';
+
+export type HabitFrequency =
+  | 'daily'
+  | 'weekdays'
+  | 'weekends';
 
 export type Habit = {
   id: string;
   name: string;
   description: string;
+  frequency: HabitFrequency;
   completed: boolean;
-  username?: string | null;
   completedDates: string[];
-  setUsername?: (username: string) => void;
 };
 
 type HabitStore = {
   habits: Habit[];
+  username: string | null;
 
-  username?: string | null;
-  setUsername?: (username: string) => void;
+  setUsername: (username: string) => void;
 
   addHabit: (
     name: string,
-    description: string
+    description: string,
+    frequency: HabitFrequency
   ) => void;
 
   toggleHabit: (id: string) => void;
@@ -31,7 +40,8 @@ type HabitStore = {
   updateHabit: (
     id: string,
     name: string,
-    description: string
+    description: string,
+    frequency: HabitFrequency
   ) => void;
 };
 
@@ -43,13 +53,17 @@ export const useHabitStore = create<HabitStore>()(
       habits: initialHabits,
 
       username: null,
+
       setUsername: (username) =>
         set({
           username,
-      }),
+        }),
 
-
-      addHabit: (name, description) =>
+      addHabit: (
+        name,
+        description,
+        frequency
+      ) =>
         set((state) => ({
           habits: [
             ...state.habits,
@@ -57,8 +71,9 @@ export const useHabitStore = create<HabitStore>()(
               id: Date.now().toString(),
               name,
               description,
+              frequency,
               completed: false,
-              completedDates: []
+              completedDates: [],
             },
           ],
         })),
@@ -74,25 +89,29 @@ export const useHabitStore = create<HabitStore>()(
               }
 
               const isCompletedToday =
-                habit.completedDates.includes(today);
+                habit.completedDates.includes(
+                  today
+                );
 
-              return {
-                ...habit,
-
-                completed: !isCompletedToday,
-
-                completedDates: isCompletedToday
+              const completedDates =
+                isCompletedToday
                   ? habit.completedDates.filter(
                       (date) => date !== today
                     )
                   : [
                       ...habit.completedDates,
                       today,
-                    ],
+                    ];
+
+              return {
+                ...habit,
+                completed:
+                  !isCompletedToday,
+                completedDates,
               };
             }),
           };
-      }),
+        }),
 
       deleteHabit: (id) =>
         set((state) => ({
@@ -101,23 +120,29 @@ export const useHabitStore = create<HabitStore>()(
           ),
         })),
 
-      updateHabit: (id, name, description) =>
+      updateHabit: (
+        id,
+        name,
+        description,
+        frequency
+      ) =>
         set((state) => ({
-          habits: state.habits.map((habit) =>
-            habit.id === id
-              ? {
-                  ...habit,
-                  name,
-                  description,
-                }
-              : habit
-          ),
+          habits: state.habits.map((habit) => {
+            if (habit.id !== id) {
+              return habit;
+            }
+
+            return {
+              ...habit,
+              name,
+              description,
+              frequency,
+            };
+          }),
         })),
     }),
-
     {
       name: 'habit-storage',
-
       storage: createJSONStorage(
         () => AsyncStorage
       ),
