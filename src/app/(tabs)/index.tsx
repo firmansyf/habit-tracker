@@ -12,6 +12,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useHabitStore } from '@/store/habit-store';
 import { getCurrentStreak } from '@/utils/date';
 
+import {
+  getGreeting,
+  getInitial,
+} from '@/utils/greeting';
+
 import { useEffect } from 'react';
  
 import EmptyState from '@/components/EmptyState';
@@ -21,12 +26,14 @@ import StreakCard from '@/components/StreakCard';
 
 export default function HomeScreen() {
   const router = useRouter();
-
+  const greeting = getGreeting();
+  
   const habits = useHabitStore((state) => state.habits);
   const toggleHabit = useHabitStore((state) => state.toggleHabit);
-
+  
   const username = useHabitStore((state) => state.username);
-
+  const initial = getInitial(username ?? "");
+  
   const deleteHabit = useHabitStore((state) => state.deleteHabit);
 
   const completedHabits = habits.filter(
@@ -89,7 +96,7 @@ export default function HomeScreen() {
             <View style={styles.header}>
               <View>
                 <Text style={styles.greeting}>
-                  Good Morning 👋
+                  {greeting} 👋
                 </Text>
 
                 <Text style={styles.name}>
@@ -99,7 +106,7 @@ export default function HomeScreen() {
 
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>
-                  Y
+                  {initial}
                 </Text>
               </View>
             </View>
