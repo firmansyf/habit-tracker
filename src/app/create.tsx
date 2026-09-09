@@ -4,6 +4,7 @@ import {
 } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -101,7 +102,8 @@ export default function CreateHabitScreen() {
     )
   );
 
-  const notificationIds = habit?.notificationIds ?? [];
+  const notificationIds =
+    habit?.notificationIds ?? [];
 
   const [name, setName] = useState('');
   const [description, setDescription] =
@@ -119,195 +121,214 @@ export default function CreateHabitScreen() {
   const [reminderMinute, setReminderMinute] =
     useState(0);
 
+  const [isSaving, setIsSaving] =
+    useState(false);
+
   const isEditMode = Boolean(id);
 
+  const trimmedName = name.trim();
+  const isValid = trimmedName.length > 0;
+
   useEffect(() => {
-    if (habit) {
-      setName(habit.name);
-      setDescription(habit.description);
-
-      setFrequency(
-        habit.frequency ?? 'daily'
-      );
-
-      setReminderEnabled(
-        habit.reminderEnabled ?? false
-      );
-
-      setReminderHour(
-        habit.reminderHour ?? 8
-      );
-
-      setReminderMinute(
-        habit.reminderMinute ?? 0
-      );
-    }
-  }, [habit]);
-
- const handleSaveHabit = async () => {
-  if (!name.trim()) {
-    return;
-  }
-
-  /*
-   * EDIT HABIT
-   */
-  if (isEditMode && id) {
-    /*
-     * Cancel notification lama terlebih dahulu.
-     */
-    if (notificationIds.length > 0) {
-      await cancelHabitReminder(
-        notificationIds
-      );
+    if (!habit) {
+      return;
     }
 
-    /*
-     * Update informasi habit.
-     */
-    updateHabit(
-      id,
-      name.trim(),
-      description.trim() ||
-        'No description',
-      frequency
+    setName(habit.name);
+    setDescription(habit.description);
+
+    setFrequency(
+      habit.frequency ?? 'daily'
     );
 
-    /*
-     * Jika reminder OFF,
-     * cukup kosongkan notification IDs.
-     */
-    if (!reminderEnabled) {
-      updateReminder(
-        id,
-        false,
-        reminderHour,
-        reminderMinute,
-        []
-      );
+    setReminderEnabled(
+      habit.reminderEnabled ?? false
+    );
 
-      router.back();
+    setReminderHour(
+      habit.reminderHour ?? 8
+    );
+
+    setReminderMinute(
+      habit.reminderMinute ?? 0
+    );
+  }, [habit]);
+
+  const handleSaveHabit = async () => {
+    if (!isValid || isSaving) {
       return;
     }
 
-    /*
-     * Request permission.
-     */
-    const permissionGranted =
-      await requestNotificationPermission();
+    setIsSaving(true);
 
-    /*
-     * Jika permission ditolak,
-     * jangan membuat notification.
-     */
-    if (!permissionGranted) {
-      updateReminder(
-        id,
-        false,
-        reminderHour,
-        reminderMinute,
-        []
-      );
+    try {
+      /*
+       * EDIT HABIT
+       */
+      if (isEditMode && id) {
+        /*
+         * Cancel notification lama terlebih dahulu.
+         */
+        if (notificationIds.length > 0) {
+          await cancelHabitReminder(
+            notificationIds
+          );
+        }
 
-      router.back();
-      return;
-    }
+        /*
+         * Update informasi habit.
+         */
+        updateHabit(
+          id,
+          trimmedName,
+          description.trim() ||
+            'No description',
+          frequency
+        );
 
-    /*
-     * Schedule notification baru.
-     */
-    const newNotificationIds =
-      await scheduleHabitReminder(
-        name.trim(),
+        /*
+         * Jika reminder OFF,
+         * kosongkan notification IDs.
+         */
+        if (!reminderEnabled) {
+          updateReminder(
+            id,
+            false,
+            reminderHour,
+            reminderMinute,
+            []
+          );
+
+          router.back();
+          return;
+        }
+
+        /*
+         * Request notification permission.
+         */
+        const permissionGranted =
+          await requestNotificationPermission();
+
+        /*
+         * Jika permission ditolak,
+         * reminder dibuat OFF.
+         */
+        if (!permissionGranted) {
+          updateReminder(
+            id,
+            false,
+            reminderHour,
+            reminderMinute,
+            []
+          );
+
+          router.back();
+          return;
+        }
+
+        /*
+         * Schedule notification baru.
+         */
+        const newNotificationIds =
+          await scheduleHabitReminder(
+            trimmedName,
+            frequency,
+            reminderHour,
+            reminderMinute
+          );
+
+        /*
+         * Simpan notification IDs.
+         */
+        updateReminder(
+          id,
+          true,
+          reminderHour,
+          reminderMinute,
+          newNotificationIds
+        );
+
+        router.back();
+        return;
+      }
+
+      /*
+       * CREATE HABIT
+       */
+      const newHabitId = addHabit(
+        trimmedName,
+        description.trim() ||
+          'No description',
         frequency,
+        reminderEnabled,
         reminderHour,
         reminderMinute
       );
 
-    /*
-     * Simpan notification IDs.
-     */
-    updateReminder(
-      id,
-      true,
-      reminderHour,
-      reminderMinute,
-      newNotificationIds
-    );
+      /*
+       * Jika reminder OFF,
+       * tidak perlu membuat notification.
+       */
+      if (!reminderEnabled) {
+        router.back();
+        return;
+      }
 
-    router.back();
-    return;
-  }
+      /*
+       * Request notification permission.
+       */
+      const permissionGranted =
+        await requestNotificationPermission();
 
-  /*
-   * CREATE HABIT
-   */
-  const newHabitId = addHabit(
-    name.trim(),
-    description.trim() ||
-      'No description',
-    frequency,
-    reminderEnabled,
-    reminderHour,
-    reminderMinute
-  );
+      /*
+       * Jika permission ditolak,
+       * reminder tetap OFF.
+       */
+      if (!permissionGranted) {
+        updateReminder(
+          newHabitId,
+          false,
+          reminderHour,
+          reminderMinute,
+          []
+        );
 
-  /*
-   * Jika reminder OFF,
-   * tidak perlu membuat notification.
-   */
-  if (!reminderEnabled) {
-    router.back();
-    return;
-  }
+        router.back();
+        return;
+      }
 
-  /*
-   * Request notification permission.
-   */
-  const permissionGranted =
-    await requestNotificationPermission();
+      /*
+       * Schedule notification.
+       */
+      const newNotificationIds =
+        await scheduleHabitReminder(
+          trimmedName,
+          frequency,
+          reminderHour,
+          reminderMinute
+        );
 
-  /*
-   * Jika permission ditolak,
-   * reminder tetap disimpan sebagai OFF.
-   */
-  if (!permissionGranted) {
-    updateReminder(
-      newHabitId,
-      false,
-      reminderHour,
-      reminderMinute,
-      []
-    );
+      /*
+       * Simpan notification IDs.
+       */
+      updateReminder(
+        newHabitId,
+        true,
+        reminderHour,
+        reminderMinute,
+        newNotificationIds
+      );
 
-    router.back();
-    return;
-  }
-
-  /*
-   * Schedule notification.
-   */
-  const newNotificationIds =
-    await scheduleHabitReminder(
-      name.trim(),
-      frequency,
-      reminderHour,
-      reminderMinute
-    );
-
-  /*
-   * Simpan notification IDs.
-   */
-  updateReminder(
-    newHabitId,
-    true,
-    reminderHour,
-    reminderMinute,
-    newNotificationIds
-  );
-
-  router.back();
-};
+      router.back();
+    } catch (error) {
+      console.error(
+        'Failed to save habit:',
+        error
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -327,8 +348,15 @@ export default function CreateHabitScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              hitSlop={8}
               onPress={() => router.back()}
-              style={styles.backButton}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed &&
+                  styles.backButtonPressed,
+              ]}
             >
               <Text
                 style={styles.backButtonText}
@@ -361,16 +389,32 @@ export default function CreateHabitScreen() {
                 onChangeText={setName}
                 placeholder="e.g. Drink Water"
                 placeholderTextColor="#94A3B8"
-                style={styles.input}
+                style={[
+                  styles.input,
+                  name.length > 0 &&
+                    styles.inputActive,
+                ]}
                 autoCapitalize="words"
+                autoCorrect={false}
+                returnKeyType="next"
               />
             </View>
 
             {/* Description */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>
-                Description
-              </Text>
+              <View
+                style={styles.labelRow}
+              >
+                <Text style={styles.label}>
+                  Description
+                </Text>
+
+                <Text
+                  style={styles.optionalText}
+                >
+                  Optional
+                </Text>
+              </View>
 
               <TextInput
                 value={description}
@@ -380,6 +424,8 @@ export default function CreateHabitScreen() {
                 style={[
                   styles.input,
                   styles.textArea,
+                  description.length > 0 &&
+                    styles.inputActive,
                 ]}
                 multiline
                 numberOfLines={4}
@@ -393,7 +439,16 @@ export default function CreateHabitScreen() {
                 Frequency
               </Text>
 
-              <View style={styles.frequencyList}>
+              <Text
+                style={styles.sectionHint}
+              >
+                Choose when this habit should
+                be completed.
+              </Text>
+
+              <View
+                style={styles.frequencyList}
+              >
                 {FREQUENCY_OPTIONS.map(
                   (option) => {
                     const isSelected =
@@ -403,6 +458,11 @@ export default function CreateHabitScreen() {
                     return (
                       <Pressable
                         key={option.value}
+                        accessibilityRole="radio"
+                        accessibilityState={{
+                          selected:
+                            isSelected,
+                        }}
                         onPress={() =>
                           setFrequency(
                             option.value
@@ -452,11 +512,19 @@ export default function CreateHabitScreen() {
                               styles.frequencyDescription
                             }
                           >
-                            {
-                              option.description
-                            }
+                            {option.description}
                           </Text>
                         </View>
+
+                        {isSelected && (
+                          <Text
+                            style={
+                              styles.selectedCheck
+                            }
+                          >
+                            ✓
+                          </Text>
+                        )}
                       </Pressable>
                     );
                   }
@@ -466,15 +534,33 @@ export default function CreateHabitScreen() {
 
             {/* Reminder */}
             <View style={styles.inputGroup}>
-              <View style={styles.reminderHeader}>
+              <View
+                style={[
+                  styles.reminderHeader,
+                  reminderEnabled &&
+                    styles.reminderHeaderActive,
+                ]}
+              >
                 <View
                   style={
                     styles.reminderHeaderContent
                   }
                 >
-                  <Text style={styles.label}>
-                    Reminder
-                  </Text>
+                  <View
+                    style={styles.reminderTitleRow}
+                  >
+                    <Text
+                      style={styles.reminderIcon}
+                    >
+                      🔔
+                    </Text>
+
+                    <Text
+                      style={styles.label}
+                    >
+                      Reminder
+                    </Text>
+                  </View>
 
                   <Text
                     style={
@@ -482,11 +568,17 @@ export default function CreateHabitScreen() {
                     }
                   >
                     Get notified when it's time
-                    to complete this habit
+                    to complete this habit.
                   </Text>
                 </View>
 
                 <Pressable
+                  accessibilityRole="switch"
+                  accessibilityState={{
+                    checked:
+                      reminderEnabled,
+                  }}
+                  accessibilityLabel="Habit reminder"
                   onPress={() =>
                     setReminderEnabled(
                       !reminderEnabled
@@ -509,11 +601,22 @@ export default function CreateHabitScreen() {
               </View>
 
               {reminderEnabled && (
-                <View style={styles.reminderOptions}>
+                <View
+                  style={styles.reminderOptions}
+                >
                   <Text
-                    style={styles.reminderTimeLabel}
+                    style={
+                      styles.reminderTimeLabel
+                    }
                   >
                     Reminder Time
+                  </Text>
+
+                  <Text
+                    style={styles.sectionHint}
+                  >
+                    Choose a time that works best
+                    for you.
                   </Text>
 
                   <View
@@ -532,10 +635,16 @@ export default function CreateHabitScreen() {
                         return (
                           <Pressable
                             key={option.label}
+                            accessibilityRole="radio"
+                            accessibilityState={{
+                              selected:
+                                isSelected,
+                            }}
                             onPress={() => {
                               setReminderHour(
                                 option.hour
                               );
+
                               setReminderMinute(
                                 option.minute
                               );
@@ -569,24 +678,48 @@ export default function CreateHabitScreen() {
 
           {/* Save Button */}
           <Pressable
+            accessibilityRole="button"
+            accessibilityState={{
+              disabled:
+                !isValid || isSaving,
+              busy: isSaving,
+            }}
             style={({ pressed }) => [
               styles.saveButton,
-              !name.trim() &&
+              !isValid &&
                 styles.saveButtonDisabled,
+              isSaving &&
+                styles.saveButtonSaving,
               pressed &&
-                name.trim() &&
+                isValid &&
+                !isSaving &&
                 styles.saveButtonPressed,
             ]}
             onPress={handleSaveHabit}
-            disabled={!name.trim()}
+            disabled={!isValid || isSaving}
           >
-            <Text
-              style={styles.saveButtonText}
-            >
-              {isEditMode
-                ? 'Update Habit'
-                : 'Save Habit'}
-            </Text>
+            {isSaving ? (
+              <>
+                <ActivityIndicator
+                  size="small"
+                  color="#FFFFFF"
+                />
+
+                <Text
+                  style={styles.saveButtonText}
+                >
+                  Saving...
+                </Text>
+              </>
+            ) : (
+              <Text
+                style={styles.saveButtonText}
+              >
+                {isEditMode
+                  ? 'Update Habit'
+                  : 'Save Habit'}
+              </Text>
+            )}
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -614,16 +747,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 32,
+    marginBottom: 28,
   },
 
   backButton: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 14,
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  backButtonPressed: {
+    backgroundColor: '#F1F5F9',
   },
 
   backButtonText: {
@@ -651,10 +790,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
   label: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#0F172A',
+  },
+
+  optionalText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#94A3B8',
   },
 
   input: {
@@ -668,12 +819,24 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
 
+  inputActive: {
+    borderColor: '#CBD5E1',
+  },
+
   textArea: {
     minHeight: 120,
   },
 
+  sectionHint: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: '#94A3B8',
+    marginTop: -2,
+  },
+
   frequencyList: {
     gap: 10,
+    marginTop: 2,
   },
 
   frequencyOption: {
@@ -682,7 +845,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
   },
 
@@ -692,7 +855,7 @@ const styles = StyleSheet.create({
   },
 
   frequencyOptionPressed: {
-    opacity: 0.8,
+    opacity: 0.75,
   },
 
   radio: {
@@ -722,10 +885,9 @@ const styles = StyleSheet.create({
   },
 
   frequencyLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#334155',
-    marginBottom: 4,
   },
 
   frequencyLabelSelected: {
@@ -735,9 +897,15 @@ const styles = StyleSheet.create({
   frequencyDescription: {
     fontSize: 13,
     color: '#64748B',
+    marginTop: 4,
   },
 
-  /* Reminder */
+  selectedCheck: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2563EB',
+    marginLeft: 8,
+  },
 
   reminderHeader: {
     flexDirection: 'row',
@@ -746,8 +914,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
+  },
+
+  reminderHeaderActive: {
+    borderColor: '#BFDBFE',
+    backgroundColor: '#F8FBFF',
   },
 
   reminderHeaderContent: {
@@ -755,10 +928,20 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
 
+  reminderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  reminderIcon: {
+    fontSize: 17,
+    marginRight: 7,
+  },
+
   reminderDescription: {
     fontSize: 13,
     color: '#64748B',
-    marginTop: 4,
+    marginTop: 5,
     lineHeight: 18,
   },
 
@@ -790,29 +973,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 16,
-    marginTop: 2,
+    marginTop: 8,
   },
 
   reminderTimeLabel: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#334155',
-    marginBottom: 12,
   },
 
   reminderTimeList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+    marginTop: 4,
   },
 
   reminderTimeOption: {
     minWidth: 70,
     paddingVertical: 11,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: 11,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     backgroundColor: '#F8FAFC',
@@ -830,7 +1013,7 @@ const styles = StyleSheet.create({
 
   reminderTimeText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: '#475569',
   },
 
@@ -838,19 +1021,24 @@ const styles = StyleSheet.create({
     color: '#2563EB',
   },
 
-  /* Save */
-
   saveButton: {
+    minHeight: 56,
     backgroundColor: '#0F172A',
     borderRadius: 16,
-    padding: 17,
     alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 10,
     marginTop: 32,
     marginBottom: 20,
   },
 
   saveButtonDisabled: {
     backgroundColor: '#CBD5E1',
+  },
+
+  saveButtonSaving: {
+    opacity: 0.8,
   },
 
   saveButtonPressed: {
