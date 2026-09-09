@@ -34,6 +34,8 @@ type HabitStore = {
   habits: Habit[];
   username: string | null;
 
+  resetAllData: () => void;
+
   setUsername: (username: string) => void;
 
   addHabit: (
@@ -74,6 +76,12 @@ export const useHabitStore =
         habits: initialHabits,
 
         username: null,
+
+        resetAllData: () =>
+          set({
+            habits: [],
+            username: null,
+          }),
 
         setUsername: (username) =>
           set({
