@@ -16,6 +16,8 @@ import {
   isScheduledDate,
 } from '@/utils/date';
 
+import { cancelHabitReminder } from '@/utils/notification';
+
 import {
   getGreeting,
   getInitial,
@@ -67,26 +69,53 @@ export default function HomeScreen() {
   );
 
   const handleDeleteHabit = (
-    id: string,
-    name: string
-  ) => {
-    Alert.alert(
-      'Delete Habit',
-      `Are you sure you want to delete "${name}"?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => deleteHabit(id),
-        },
-      ]
-    );
-  };
+      id: string,
+      name: string,
+      notificationIds: string[]
+    ) => {
+      Alert.alert(
+        'Delete Habit',
+        `Are you sure you want to delete "${name}"?`,
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                /*
+                * Cancel semua notification
+                * yang dimiliki habit.
+                */
+                await cancelHabitReminder(
+                  notificationIds
+                );
 
+                /*
+                * Setelah notification dibatalkan,
+                * hapus habit dari store.
+                */
+                deleteHabit(id);
+              } catch (error) {
+                console.error(
+                  'Failed to cancel habit reminder:',
+                  error
+                );
+
+                /*
+                * Tetap hapus habit dari aplikasi
+                * meskipun cancellation notification gagal.
+                */
+                deleteHabit(id);
+              }
+            },
+          },
+        ]
+      );
+   };
 
   useEffect(() => {
     if (!username) {
@@ -152,7 +181,8 @@ export default function HomeScreen() {
             onDelete={() =>
               handleDeleteHabit(
                 item.id,
-                item.name
+                item.name,
+                item.notificationIds ?? []
               )
             }
             onDetail={() =>

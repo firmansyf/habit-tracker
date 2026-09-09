@@ -36,7 +36,6 @@ export const requestNotificationPermission =
           importance:
             Notifications.AndroidImportance.HIGH,
           vibrationPattern: [0, 250, 250, 250],
-          sound: 'default',
         }
       );
     }
@@ -69,7 +68,6 @@ const scheduleWeeklyNotification =
         content: {
           title: 'Habit Reminder 🔔',
           body: `Time to complete "${habitName}"`,
-          sound: 'default',
         },
 
         trigger: {
@@ -110,7 +108,6 @@ export const scheduleHabitReminder =
             content: {
               title: 'Habit Reminder 🔔',
               body: `Time to complete "${habitName}"`,
-              sound: 'default',
             },
 
             trigger: {
