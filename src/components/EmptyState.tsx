@@ -1,4 +1,9 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 type EmptyStateProps = {
   onAddHabit: () => void;
@@ -9,7 +14,9 @@ export default function EmptyState({
 }: EmptyStateProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.emoji}>📝</Text>
+      <View style={styles.iconContainer}>
+        <Text style={styles.icon}>📝</Text>
+      </View>
 
       <Text style={styles.title}>
         No habits yet
@@ -38,13 +45,23 @@ export default function EmptyState({
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    paddingVertical: 40,
     paddingHorizontal: 20,
+    paddingTop: 32,
+    paddingBottom: 20,
   },
 
-  emoji: {
-    fontSize: 48,
-    marginBottom: 16,
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+  },
+
+  icon: {
+    fontSize: 40,
   },
 
   title: {
@@ -58,16 +75,18 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     color: '#64748B',
     textAlign: 'center',
+    maxWidth: 290,
     marginTop: 8,
-    maxWidth: 280,
   },
 
   button: {
+    minHeight: 52,
     backgroundColor: '#0F172A',
-    borderRadius: 16,
+    borderRadius: 14,
     paddingHorizontal: 20,
-    paddingVertical: 14,
-    marginTop: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 22,
   },
 
   buttonPressed: {
@@ -77,6 +96,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });

@@ -7,20 +7,38 @@ type StreakCardProps = {
 export default function StreakCard({
   currentStreak,
 }: StreakCardProps) {
-  return (
-    <View style={styles.streakCard}>
-      <Text style={styles.streakEmoji}>
-        🔥
-      </Text>
+  const streakLabel =
+    currentStreak === 1
+      ? 'day streak'
+      : 'day streaks';
 
-      <View>
-        <Text style={styles.streakNumber}>
-          {currentStreak}{' '}
-          {currentStreak === 1 ? 'Day' : 'Days'}
+  return (
+    <View style={styles.card}>
+      <View style={styles.iconContainer}>
+        <Text style={styles.icon}>🔥</Text>
+      </View>
+
+      <View style={styles.content}>
+        <Text style={styles.eyebrow}>
+          CURRENT STREAK
         </Text>
 
-        <Text style={styles.streakLabel}>
-          Current Streak
+        <View style={styles.valueRow}>
+          <Text style={styles.number}>
+            {currentStreak}
+          </Text>
+
+          <Text style={styles.unit}>
+            {streakLabel}
+          </Text>
+        </View>
+
+        <Text style={styles.description}>
+          {currentStreak === 0
+            ? 'Start today and build your streak.'
+            : currentStreak === 1
+              ? 'Great start! Keep going.'
+              : 'Keep the momentum going!'}
         </Text>
       </View>
     </View>
@@ -28,29 +46,65 @@ export default function StreakCard({
 }
 
 const styles = StyleSheet.create({
-  streakCard: {
+  card: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF7ED',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 28,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#FED7AA',
+    padding: 18,
+    marginBottom: 20,
   },
 
-  streakEmoji: {
-    fontSize: 36,
-    marginRight: 16,
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: '#FFEDD5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
   },
 
-  streakNumber: {
-    fontSize: 22,
+  icon: {
+    fontSize: 30,
+  },
+
+  content: {
+    flex: 1,
+  },
+
+  eyebrow: {
+    fontSize: 11,
     fontWeight: '700',
+    letterSpacing: 0.8,
+    color: '#C2410C',
+  },
+
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginTop: 2,
+  },
+
+  number: {
+    fontSize: 25,
+    lineHeight: 32,
+    fontWeight: '800',
     color: '#9A3412',
   },
 
-  streakLabel: {
+  unit: {
     fontSize: 14,
+    fontWeight: '600',
     color: '#C2410C',
+    marginLeft: 6,
+  },
+
+  description: {
+    fontSize: 12,
+    color: '#9A3412',
     marginTop: 2,
   },
 });

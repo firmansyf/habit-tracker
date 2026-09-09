@@ -20,6 +20,21 @@ type HabitCardProps = {
   onDetail: () => void;
 };
 
+const getFrequencyLabel = (
+  frequency: Habit['frequency']
+) => {
+  switch (frequency) {
+    case 'weekdays':
+      return 'Weekdays';
+
+    case 'weekends':
+      return 'Weekends';
+
+    default:
+      return 'Daily';
+  }
+};
+
 export default function HabitCard({
   habit,
   onToggle,
@@ -29,9 +44,16 @@ export default function HabitCard({
 }: HabitCardProps) {
   const today = getToday();
 
-  const isScheduledToday =
-    isScheduledDate(
-      today,
+  const isScheduledToday = isScheduledDate(
+    today,
+    habit.frequency ?? 'daily'
+  );
+
+  const isCompletedToday =
+    habit.completedDates.includes(today);
+
+  const frequencyLabel =
+    getFrequencyLabel(
       habit.frequency ?? 'daily'
     );
 
@@ -43,6 +65,7 @@ export default function HabitCard({
           styles.habitCardDisabled,
       ]}
     >
+      {/* Main Habit */}
       <Pressable
         style={({ pressed }) => [
           styles.habitMain,
@@ -57,16 +80,14 @@ export default function HabitCard({
         <View
           style={[
             styles.checkbox,
-
-            habit.completed &&
+            isCompletedToday &&
               isScheduledToday &&
               styles.checkboxCompleted,
-
             !isScheduledToday &&
               styles.checkboxDisabled,
           ]}
         >
-          {habit.completed &&
+          {isCompletedToday &&
             isScheduledToday && (
               <Text style={styles.checkmark}>
                 ✓
@@ -77,13 +98,12 @@ export default function HabitCard({
         {/* Habit Information */}
         <View style={styles.habitInfo}>
           <Text
+            numberOfLines={1}
             style={[
               styles.habitName,
-
-              habit.completed &&
+              isCompletedToday &&
                 isScheduledToday &&
                 styles.habitCompleted,
-
               !isScheduledToday &&
                 styles.habitNameDisabled,
             ]}
@@ -91,22 +111,70 @@ export default function HabitCard({
             {habit.name}
           </Text>
 
-          <Text
-            style={[
-              styles.habitDescription,
-              !isScheduledToday &&
-                styles.habitDescriptionDisabled,
-            ]}
-          >
-            {habit.description}
-          </Text>
+          {!!habit.description && (
+            <Text
+              numberOfLines={2}
+              style={[
+                styles.habitDescription,
+                !isScheduledToday &&
+                  styles.habitDescriptionDisabled,
+              ]}
+            >
+              {habit.description}
+            </Text>
+          )}
 
-          {/* Not Scheduled Label */}
+          {/* Habit Metadata */}
+          <View style={styles.metadata}>
+            <View style={styles.metadataItem}>
+              <Text
+                style={styles.metadataIcon}
+              >
+                ↻
+              </Text>
+
+              <Text
+                style={[
+                  styles.metadataText,
+                  !isScheduledToday &&
+                    styles.metadataTextDisabled,
+                ]}
+              >
+                {frequencyLabel}
+              </Text>
+            </View>
+
+            {habit.reminderEnabled && (
+              <View style={styles.metadataItem}>
+                <Text
+                  style={styles.metadataIcon}
+                >
+                  🔔
+                </Text>
+
+                <Text
+                  style={[
+                    styles.metadataText,
+                    !isScheduledToday &&
+                      styles.metadataTextDisabled,
+                  ]}
+                >
+                  {String(
+                    habit.reminderHour
+                  ).padStart(2, '0')}
+                  :
+                  {String(
+                    habit.reminderMinute
+                  ).padStart(2, '0')}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Not Scheduled */}
           {!isScheduledToday && (
             <Text
-              style={
-                styles.notScheduledText
-              }
+              style={styles.notScheduledText}
             >
               Not scheduled today
             </Text>
@@ -118,6 +186,9 @@ export default function HabitCard({
       <View style={styles.actions}>
         {/* Edit */}
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Edit ${habit.name}`}
+          hitSlop={6}
           style={({ pressed }) => [
             styles.actionButton,
             pressed &&
@@ -125,15 +196,16 @@ export default function HabitCard({
           ]}
           onPress={onEdit}
         >
-          <Text
-            style={styles.actionButtonText}
-          >
+          <Text style={styles.actionIcon}>
             ✏️
           </Text>
         </Pressable>
 
         {/* Delete */}
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${habit.name}`}
+          hitSlop={6}
           style={({ pressed }) => [
             styles.actionButton,
             pressed &&
@@ -141,26 +213,25 @@ export default function HabitCard({
           ]}
           onPress={onDelete}
         >
-          <Text
-            style={styles.actionButtonText}
-          >
+          <Text style={styles.actionIcon}>
             🗑️
           </Text>
         </Pressable>
 
         {/* Detail */}
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`View ${habit.name}`}
+          hitSlop={6}
           style={({ pressed }) => [
             styles.detailButton,
             pressed &&
-              styles.actionButtonPressed,
+              styles.detailButtonPressed,
           ]}
           onPress={onDetail}
         >
-          <Text
-            style={styles.detailButtonText}
-          >
-            👁️
+          <Text style={styles.detailButtonText}>
+            View
           </Text>
         </Pressable>
       </View>
@@ -173,17 +244,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 18,
     padding: 16,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
 
-  /*
-   * Card ketika habit tidak dijadwalkan
-   * hari ini.
-   */
   habitCardDisabled: {
-    backgroundColor: '#F1F5F9',
+    backgroundColor: '#F8FAFC',
+    borderColor: '#E2E8F0',
   },
 
   habitCardPressed: {
@@ -191,20 +261,21 @@ const styles = StyleSheet.create({
   },
 
   habitMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
 
   checkbox: {
     width: 28,
     height: 28,
-    borderRadius: 8,
+    borderRadius: 9,
     borderWidth: 2,
     borderColor: '#CBD5E1',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 14,
+    marginTop: 1,
   },
 
   checkboxCompleted: {
@@ -212,10 +283,6 @@ const styles = StyleSheet.create({
     borderColor: '#16A34A',
   },
 
-  /*
-   * Checkbox untuk habit yang belum
-   * dijadwalkan hari ini.
-   */
   checkboxDisabled: {
     backgroundColor: '#E2E8F0',
     borderColor: '#CBD5E1',
@@ -223,34 +290,34 @@ const styles = StyleSheet.create({
 
   checkmark: {
     color: '#FFFFFF',
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
   },
 
   habitInfo: {
     flex: 1,
+    minWidth: 0,
   },
 
   habitName: {
     fontSize: 16,
-    fontWeight: '600',
+    lineHeight: 21,
+    fontWeight: '700',
     color: '#0F172A',
   },
 
   habitCompleted: {
-    textDecorationLine: 'line-through',
     color: '#94A3B8',
+    textDecorationLine: 'line-through',
   },
 
-  /*
-   * Nama habit yang tidak dijadwalkan.
-   */
   habitNameDisabled: {
     color: '#94A3B8',
   },
 
   habitDescription: {
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 19,
     color: '#64748B',
     marginTop: 4,
   },
@@ -259,49 +326,78 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
   },
 
-  /*
-   * Label kecil untuk menunjukkan
-   * bahwa habit tidak tersedia hari ini.
-   */
-  notScheduledText: {
+  metadata: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 9,
+  },
+
+  metadataItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  metadataIcon: {
+    fontSize: 12,
+    marginRight: 4,
+  },
+
+  metadataText: {
     fontSize: 12,
     fontWeight: '600',
+    color: '#64748B',
+  },
+
+  metadataTextDisabled: {
     color: '#94A3B8',
-    marginTop: 6,
+  },
+
+  notScheduledText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#94A3B8',
+    marginTop: 7,
   },
 
   actions: {
-    flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 8,
+    gap: 2,
   },
 
   actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
+    width: 34,
+    height: 34,
+    borderRadius: 10,
     alignItems: 'center',
+    justifyContent: 'center',
   },
 
   actionButtonPressed: {
-    opacity: 0.5,
+    backgroundColor: '#F1F5F9',
   },
 
-  actionButtonText: {
-    fontSize: 18,
+  actionIcon: {
+    fontSize: 16,
   },
 
   detailButton: {
-    backgroundColor: '#EFF6FF',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
     borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    marginTop: 2,
+  },
+
+  detailButtonPressed: {
+    opacity: 0.6,
   },
 
   detailButtonText: {
     color: '#2563EB',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
