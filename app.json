@@ -11,6 +11,9 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
+       "permissions": [
+        "android.permission.SCHEDULE_EXACT_ALARM"
+      ],
       "predictiveBackGestureEnabled": false,
       "package": "com.yusuffirmansyah.habittracker"
     },
@@ -28,7 +31,8 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,3 +1,6 @@
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import {
   useLocalSearchParams,
   useRouter,
@@ -49,33 +52,14 @@ const FREQUENCY_OPTIONS: {
   },
 ];
 
-const REMINDER_OPTIONS = [
-  {
-    hour: 8,
-    minute: 0,
-    label: '08:00',
-  },
-  {
-    hour: 9,
-    minute: 0,
-    label: '09:00',
-  },
-  {
-    hour: 12,
-    minute: 0,
-    label: '12:00',
-  },
-  {
-    hour: 18,
-    minute: 0,
-    label: '18:00',
-  },
-  {
-    hour: 20,
-    minute: 0,
-    label: '20:00',
-  },
-];
+const formatTime = (
+  hour: number,
+  minute: number
+) => {
+  return `${String(hour).padStart(2, '0')}:${String(
+    minute
+  ).padStart(2, '0')}`;
+};
 
 export default function CreateHabitScreen() {
   const router = useRouter();
@@ -121,6 +105,9 @@ export default function CreateHabitScreen() {
   const [reminderMinute, setReminderMinute] =
     useState(0);
 
+  const [showTimePicker, setShowTimePicker] =
+    useState(false);
+
   const [isSaving, setIsSaving] =
     useState(false);
 
@@ -154,6 +141,30 @@ export default function CreateHabitScreen() {
     );
   }, [habit]);
 
+  const handleTimeChange = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date
+  ) => {
+    if (Platform.OS === 'android') {
+      setShowTimePicker(false);
+    }
+
+    if (
+      event.type === 'dismissed' ||
+      !selectedDate
+    ) {
+      return;
+    }
+
+    setReminderHour(
+      selectedDate.getHours()
+    );
+
+    setReminderMinute(
+      selectedDate.getMinutes()
+    );
+  };
+
   const handleSaveHabit = async () => {
     if (!isValid || isSaving) {
       return;
@@ -165,10 +176,12 @@ export default function CreateHabitScreen() {
       /*
        * EDIT HABIT
        */
+
       if (isEditMode && id) {
         /*
          * Cancel notification lama terlebih dahulu.
          */
+
         if (notificationIds.length > 0) {
           await cancelHabitReminder(
             notificationIds
@@ -178,6 +191,7 @@ export default function CreateHabitScreen() {
         /*
          * Update informasi habit.
          */
+
         updateHabit(
           id,
           trimmedName,
@@ -190,6 +204,7 @@ export default function CreateHabitScreen() {
          * Jika reminder OFF,
          * kosongkan notification IDs.
          */
+
         if (!reminderEnabled) {
           updateReminder(
             id,
@@ -206,6 +221,7 @@ export default function CreateHabitScreen() {
         /*
          * Request notification permission.
          */
+
         const permissionGranted =
           await requestNotificationPermission();
 
@@ -213,6 +229,7 @@ export default function CreateHabitScreen() {
          * Jika permission ditolak,
          * reminder dibuat OFF.
          */
+
         if (!permissionGranted) {
           updateReminder(
             id,
@@ -229,6 +246,7 @@ export default function CreateHabitScreen() {
         /*
          * Schedule notification baru.
          */
+
         const newNotificationIds =
           await scheduleHabitReminder(
             trimmedName,
@@ -240,6 +258,7 @@ export default function CreateHabitScreen() {
         /*
          * Simpan notification IDs.
          */
+
         updateReminder(
           id,
           true,
@@ -255,6 +274,7 @@ export default function CreateHabitScreen() {
       /*
        * CREATE HABIT
        */
+
       const newHabitId = addHabit(
         trimmedName,
         description.trim() ||
@@ -269,6 +289,7 @@ export default function CreateHabitScreen() {
        * Jika reminder OFF,
        * tidak perlu membuat notification.
        */
+
       if (!reminderEnabled) {
         router.back();
         return;
@@ -277,6 +298,7 @@ export default function CreateHabitScreen() {
       /*
        * Request notification permission.
        */
+
       const permissionGranted =
         await requestNotificationPermission();
 
@@ -284,6 +306,7 @@ export default function CreateHabitScreen() {
        * Jika permission ditolak,
        * reminder tetap OFF.
        */
+
       if (!permissionGranted) {
         updateReminder(
           newHabitId,
@@ -300,6 +323,7 @@ export default function CreateHabitScreen() {
       /*
        * Schedule notification.
        */
+
       const newNotificationIds =
         await scheduleHabitReminder(
           trimmedName,
@@ -311,6 +335,7 @@ export default function CreateHabitScreen() {
       /*
        * Simpan notification IDs.
        */
+
       updateReminder(
         newHabitId,
         true,
@@ -346,6 +371,7 @@ export default function CreateHabitScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
+
           <View style={styles.header}>
             <Pressable
               accessibilityRole="button"
@@ -377,8 +403,10 @@ export default function CreateHabitScreen() {
           </View>
 
           {/* Form */}
+
           <View style={styles.form}>
             {/* Habit Name */}
+
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
                 Habit Name
@@ -401,10 +429,9 @@ export default function CreateHabitScreen() {
             </View>
 
             {/* Description */}
+
             <View style={styles.inputGroup}>
-              <View
-                style={styles.labelRow}
-              >
+              <View style={styles.labelRow}>
                 <Text style={styles.label}>
                   Description
                 </Text>
@@ -434,14 +461,13 @@ export default function CreateHabitScreen() {
             </View>
 
             {/* Frequency */}
+
             <View style={styles.inputGroup}>
               <Text style={styles.label}>
                 Frequency
               </Text>
 
-              <Text
-                style={styles.sectionHint}
-              >
+              <Text style={styles.sectionHint}>
                 Choose when this habit should
                 be completed.
               </Text>
@@ -533,6 +559,7 @@ export default function CreateHabitScreen() {
             </View>
 
             {/* Reminder */}
+
             <View style={styles.inputGroup}>
               <View
                 style={[
@@ -619,64 +646,80 @@ export default function CreateHabitScreen() {
                     for you.
                   </Text>
 
-                  <View
-                    style={
-                      styles.reminderTimeList
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Choose reminder time"
+                    onPress={() =>
+                      setShowTimePicker(true)
                     }
+                    style={({ pressed }) => [
+                      styles.timePickerButton,
+                      pressed &&
+                        styles.timePickerButtonPressed,
+                    ]}
                   >
-                    {REMINDER_OPTIONS.map(
-                      (option) => {
-                        const isSelected =
-                          reminderHour ===
-                            option.hour &&
-                          reminderMinute ===
-                            option.minute;
+                    <View>
+                      <Text
+                        style={
+                          styles.timePickerLabel
+                        }
+                      >
+                        Reminder time
+                      </Text>
 
-                        return (
-                          <Pressable
-                            key={option.label}
-                            accessibilityRole="radio"
-                            accessibilityState={{
-                              selected:
-                                isSelected,
-                            }}
-                            onPress={() => {
-                              setReminderHour(
-                                option.hour
-                              );
+                      <Text
+                        style={
+                          styles.timePickerValue
+                        }
+                      >
+                        {formatTime(
+                          reminderHour,
+                          reminderMinute
+                        )}
+                      </Text>
+                    </View>
 
-                              setReminderMinute(
-                                option.minute
-                              );
-                            }}
-                            style={({ pressed }) => [
-                              styles.reminderTimeOption,
-                              isSelected &&
-                                styles.reminderTimeOptionSelected,
-                              pressed &&
-                                styles.reminderTimeOptionPressed,
-                            ]}
-                          >
-                            <Text
-                              style={[
-                                styles.reminderTimeText,
-                                isSelected &&
-                                  styles.reminderTimeTextSelected,
-                              ]}
-                            >
-                              {option.label}
-                            </Text>
-                          </Pressable>
-                        );
+                    <Text
+                      style={
+                        styles.timePickerChevron
                       }
-                    )}
-                  </View>
+                    >
+                      ›
+                    </Text>
+                  </Pressable>
+
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={
+                        (() => {
+                          const date =
+                            new Date();
+
+                          date.setHours(
+                            reminderHour,
+                            reminderMinute,
+                            0,
+                            0
+                          );
+
+                          return date;
+                        })()
+                      }
+                      mode="time"
+                      is24Hour
+                      display="default"
+                      onChange={
+                        handleTimeChange
+                      }
+                    />
+                  )}
                 </View>
               )}
             </View>
           </View>
 
           {/* Save Button */}
+
           <Pressable
             accessibilityRole="button"
             accessibilityState={{
@@ -984,41 +1027,38 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
 
-  reminderTimeList: {
+  timePickerButton: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 4,
-  },
-
-  reminderTimeOption: {
-    minWidth: 70,
-    paddingVertical: 11,
-    paddingHorizontal: 14,
-    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#E2E8F0',
     backgroundColor: '#F8FAFC',
-    alignItems: 'center',
   },
 
-  reminderTimeOptionSelected: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
-  },
-
-  reminderTimeOptionPressed: {
+  timePickerButtonPressed: {
     opacity: 0.7,
   },
 
-  reminderTimeText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#475569',
+  timePickerLabel: {
+    fontSize: 12,
+    color: '#64748B',
+    marginBottom: 4,
   },
 
-  reminderTimeTextSelected: {
+  timePickerValue: {
+    fontSize: 22,
+    fontWeight: '800',
     color: '#2563EB',
+  },
+
+  timePickerChevron: {
+    fontSize: 26,
+    color: '#94A3B8',
   },
 
   saveButton: {

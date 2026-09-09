@@ -6,8 +6,40 @@ import type { HabitFrequency } from '@/store/habit-store';
 const NOTIFICATION_CHANNEL_ID =
   'habit-reminders';
 
+/*
+ * Menentukan bagaimana notification
+ * ditampilkan ketika aplikasi sedang terbuka.
+ */
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
 export const requestNotificationPermission =
   async (): Promise<boolean> => {
+    /*
+     * Android:
+     * Buat notification channel terlebih dahulu.
+     */
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync(
+        NOTIFICATION_CHANNEL_ID,
+        {
+          name: 'Habit Reminders',
+          importance:
+            Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 250, 250, 250],
+        }
+      );
+    }
+
+    /*
+     * Check permission.
+     */
     const {
       status: existingStatus,
     } =
@@ -25,20 +57,16 @@ export const requestNotificationPermission =
     }
 
     if (finalStatus !== 'granted') {
+      console.log(
+        '❌ Notification permission denied'
+      );
+
       return false;
     }
 
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync(
-        NOTIFICATION_CHANNEL_ID,
-        {
-          name: 'Habit Reminders',
-          importance:
-            Notifications.AndroidImportance.HIGH,
-          vibrationPattern: [0, 250, 250, 250],
-        }
-      );
-    }
+    console.log(
+      '✅ Notification permission granted'
+    );
 
     return true;
   };
@@ -63,28 +91,35 @@ const scheduleWeeklyNotification =
     hour: number,
     minute: number
   ): Promise<string> => {
-    return Notifications.scheduleNotificationAsync(
-      {
-        content: {
-          title: 'Habit Reminder 🔔',
-          body: `Time to complete "${habitName}"`,
-        },
+    const notificationId =
+      await Notifications.scheduleNotificationAsync(
+        {
+          content: {
+            title: 'Habit Reminder 🔔',
+            body: `Time to complete "${habitName}"`,
+          },
 
-        trigger: {
-          type:
-            Notifications
-              .SchedulableTriggerInputTypes
-              .WEEKLY,
+          trigger: {
+            type:
+              Notifications
+                .SchedulableTriggerInputTypes
+                .WEEKLY,
 
-          weekday,
-          hour,
-          minute,
+            weekday,
+            hour,
+            minute,
 
-          channelId:
-            NOTIFICATION_CHANNEL_ID,
-        },
-      }
+            channelId:
+              NOTIFICATION_CHANNEL_ID,
+          },
+        }
+      );
+
+    console.log(
+      `✅ Weekly notification scheduled: ${notificationId}`
     );
+
+    return notificationId;
   };
 
 export const scheduleHabitReminder =
@@ -95,6 +130,16 @@ export const scheduleHabitReminder =
     minute: number
   ): Promise<string[]> => {
     const notificationIds: string[] = [];
+
+    console.log(
+      '🔔 Scheduling habit reminder:',
+      {
+        habitName,
+        frequency,
+        hour,
+        minute,
+      }
+    );
 
     /*
      * Daily
@@ -108,6 +153,7 @@ export const scheduleHabitReminder =
             content: {
               title: 'Habit Reminder 🔔',
               body: `Time to complete "${habitName}"`,
+
             },
 
             trigger: {
@@ -129,6 +175,24 @@ export const scheduleHabitReminder =
         notificationId
       );
 
+      console.log(
+        '✅ Daily notification scheduled:',
+        notificationId
+      );
+
+      /*
+       * Diagnostic:
+       * cek semua notification yang
+       * sedang terjadwal.
+       */
+      const scheduledNotifications =
+        await Notifications.getAllScheduledNotificationsAsync();
+
+      console.log(
+        '📋 Scheduled notifications:',
+        scheduledNotifications
+      );
+
       return notificationIds;
     }
 
@@ -136,12 +200,6 @@ export const scheduleHabitReminder =
      * Weekdays
      *
      * Monday - Friday
-     *
-     * 2 = Monday
-     * 3 = Tuesday
-     * 4 = Wednesday
-     * 5 = Thursday
-     * 6 = Friday
      */
     if (frequency === 'weekdays') {
       const weekdays = [
@@ -166,6 +224,14 @@ export const scheduleHabitReminder =
         );
       }
 
+      const scheduledNotifications =
+        await Notifications.getAllScheduledNotificationsAsync();
+
+      console.log(
+        '📋 Scheduled notifications:',
+        scheduledNotifications
+      );
+
       return notificationIds;
     }
 
@@ -173,9 +239,6 @@ export const scheduleHabitReminder =
      * Weekends
      *
      * Saturday - Sunday
-     *
-     * 7 = Saturday
-     * 1 = Sunday
      */
     const weekends = [
       7,
@@ -196,6 +259,14 @@ export const scheduleHabitReminder =
       );
     }
 
+    const scheduledNotifications =
+      await Notifications.getAllScheduledNotificationsAsync();
+
+    console.log(
+      '📋 Scheduled notifications:',
+      scheduledNotifications
+    );
+
     return notificationIds;
   };
 
@@ -214,5 +285,10 @@ export const cancelHabitReminder =
             notificationId
           )
       )
+    );
+
+    console.log(
+      '🗑️ Cancelled notifications:',
+      notificationIds
     );
   };
