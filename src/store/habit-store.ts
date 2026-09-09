@@ -34,6 +34,10 @@ type HabitStore = {
   habits: Habit[];
   username: string | null;
 
+  // Hydration
+  hasHydrated: boolean;
+  setHasHydrated: (value: boolean) => void;
+
   resetAllData: () => void;
 
   setUsername: (username: string) => void;
@@ -76,6 +80,14 @@ export const useHabitStore =
         habits: initialHabits,
 
         username: null,
+
+        // Hydration
+        hasHydrated: false,
+
+        setHasHydrated: (value) =>
+          set({
+            hasHydrated: value,
+          }),
 
         resetAllData: () =>
           set({
@@ -302,6 +314,16 @@ export const useHabitStore =
             ...currentState,
             ...persisted,
             habits,
+          };
+        },
+
+        onRehydrateStorage: () => {
+          return (_state, error) => {
+            if (!error) {
+              useHabitStore
+                .getState()
+                .setHasHydrated(true);
+            }
           };
         },
       }
