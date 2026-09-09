@@ -1,47 +1,20 @@
 import {
-  Stack,
   useLocalSearchParams,
   useRouter,
 } from 'expo-router';
-import { useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHabitStore } from '@/store/habit-store';
 
 import {
-  formatDate,
   getCurrentStreak,
-  getDaysInMonth,
-  getFirstDayOfMonth,
+  getLastSevenDays,
   getToday,
+  isScheduledDate,
 } from '@/utils/date';
 
-import { isScheduledDate } from '@/utils/frequency';
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-
-const DAY_NAMES = [
+const DAY_LABELS = [
   'Sun',
   'Mon',
   'Tue',
@@ -51,20 +24,10 @@ const DAY_NAMES = [
   'Sat',
 ];
 
-const getFrequencyLabel = (
-  frequency?: string
-): string => {
-  switch (frequency) {
-    case 'weekdays':
-      return 'Weekdays';
-
-    case 'weekends':
-      return 'Weekends';
-
-    case 'daily':
-    default:
-      return 'Every Day';
-  }
+const FREQUENCY_LABELS = {
+  daily: 'Every Day',
+  weekdays: 'Weekdays',
+  weekends: 'Weekends',
 };
 
 export default function HabitDetailScreen() {
@@ -74,500 +37,429 @@ export default function HabitDetailScreen() {
     id: string;
   }>();
 
-  const [calendarDate, setCalendarDate] =
-    useState(new Date());
-
   const habit = useHabitStore((state) =>
     state.habits.find(
-      (item) => item.id === id
+      (habit) => habit.id === id
     )
-  );
-
-  const deleteHabit = useHabitStore(
-    (state) => state.deleteHabit
   );
 
   if (!habit) {
     return (
-      <>
-        <Stack.Screen
-          options={{
-            headerShown: false,
-          }}
-        />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.notFound}>
+          <Text style={styles.notFoundEmoji}>
+            🔍
+          </Text>
 
-        <SafeAreaView style={styles.container}>
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>
-              Habit not found
-            </Text>
+          <Text style={styles.notFoundTitle}>
+            Habit Not Found
+          </Text>
 
-            <Pressable
-              onPress={() => router.back()}
-              style={styles.backButton}
+          <Text
+            style={styles.notFoundDescription}
+          >
+            This habit may have been deleted.
+          </Text>
+
+          <Pressable
+            style={styles.backHomeButton}
+            onPress={() => router.back()}
+          >
+            <Text
+              style={styles.backHomeButtonText}
             >
-              <Text
-                style={styles.backButtonText}
-              >
-                Go Back
-              </Text>
-            </Pressable>
-          </View>
-        </SafeAreaView>
-      </>
+              Go Back
+            </Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
     );
   }
 
-  const streak = getCurrentStreak(
-    habit.completedDates
-  );
-
-  const completedCount =
-    habit.completedDates.length;
-
-  const frequency =
-    habit.frequency ?? 'daily';
-
-  const frequencyLabel =
-    getFrequencyLabel(frequency);
-
-  const calendarYear =
-    calendarDate.getFullYear();
-
-  const calendarMonth =
-    calendarDate.getMonth();
-
-  const daysInMonth = getDaysInMonth(
-    calendarYear,
-    calendarMonth
-  );
-
-  const firstDay = getFirstDayOfMonth(
-    calendarYear,
-    calendarMonth
-  );
-
   const today = getToday();
 
-  const handlePreviousMonth = () => {
-    setCalendarDate(
-      new Date(
-        calendarYear,
-        calendarMonth - 1,
-        1
+  const completedDates =
+    habit.completedDates ?? [];
+
+  const currentStreak =
+    getCurrentStreak(
+      completedDates,
+      habit.frequency ?? 'daily'
+    );
+
+  const lastSevenDays =
+    getLastSevenDays();
+
+  /*
+   * Weekly statistics.
+   */
+  const weeklyCompleted =
+    lastSevenDays.filter((date) =>
+      completedDates.includes(date)
+    ).length;
+
+  const weeklyScheduled =
+    lastSevenDays.filter((date) =>
+      isScheduledDate(
+        date,
+        habit.frequency ?? 'daily'
       )
-    );
-  };
+    ).length;
 
-  const handleNextMonth = () => {
-    setCalendarDate(
-      new Date(
-        calendarYear,
-        calendarMonth + 1,
-        1
-      )
-    );
-  };
+  const completionRate =
+    weeklyScheduled === 0
+      ? 0
+      : Math.round(
+          (weeklyCompleted /
+            weeklyScheduled) *
+            100
+        );
 
-  const handleEdit = () => {
-    router.push({
-      pathname: '/create',
-      params: {
-        id: habit.id,
-      },
-    });
-  };
-
-  const handleDelete = () => {
-    Alert.alert(
-      'Delete Habit',
-      `Are you sure you want to delete "${habit.name}"?`,
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            deleteHabit(habit.id);
-            router.back();
-          },
-        },
-      ]
-    );
-  };
+  const frequencyLabel =
+    FREQUENCY_LABELS[
+      habit.frequency ?? 'daily'
+    ];
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
 
-      <SafeAreaView style={styles.container}>
-        <ScrollView
-          contentContainerStyle={
-            styles.content
-          }
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Back */}
+        <View style={styles.header}>
           <Pressable
+            style={styles.backButton}
             onPress={() => router.back()}
-            style={styles.back}
           >
-            <Text style={styles.backText}>
-              ← Back
+            <Text
+              style={styles.backButtonText}
+            >
+              ‹
             </Text>
           </Pressable>
 
-          {/* Habit Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>
-              {habit.name}
-            </Text>
+          <Text style={styles.headerTitle}>
+            Habit Detail
+          </Text>
 
-            <Text style={styles.description}>
-              {habit.description ||
-                'No description'}
-            </Text>
-
-            {/* Frequency */}
-            <View
-              style={styles.frequencyBadge}
-            >
-              <Text
-                style={styles.frequencyBadgeLabel}
-              >
-                Frequency
-              </Text>
-
-              <Text
-                style={styles.frequencyBadgeValue}
-              >
-                {frequencyLabel}
-              </Text>
-            </View>
-          </View>
-
-          {/* Statistics */}
-          <View
-            style={styles.statsContainer}
+          <Pressable
+            style={styles.editButton}
+            onPress={() =>
+              router.push({
+                pathname: '/create',
+                params: { id: habit.id },
+              })
+            }
           >
-            <View style={styles.statCard}>
-              <Text style={styles.statIcon}>
-                🔥
-              </Text>
+            <Text style={styles.editButtonText}>
+              Edit
+            </Text>
+          </Pressable>
+        </View>
 
-              <Text style={styles.statValue}>
-                {streak}
-              </Text>
+        {/* Habit Info */}
 
-              <Text style={styles.statLabel}>
-                Current Streak
-              </Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <Text style={styles.statIcon}>
-                ✅
-              </Text>
-
-              <Text style={styles.statValue}>
-                {completedCount}
-              </Text>
-
-              <Text style={styles.statLabel}>
-                Completed
-              </Text>
-            </View>
+        <View style={styles.heroCard}>
+          <View style={styles.heroIcon}>
+            <Text style={styles.heroEmoji}>
+              ✓
+            </Text>
           </View>
 
-          {/* Calendar */}
-          <View
-            style={styles.calendarSection}
-          >
-            <Text style={styles.sectionTitle}>
-              Completion Calendar
+          <Text style={styles.habitName}>
+            {habit.name}
+          </Text>
+
+          <Text style={styles.habitDescription}>
+            {habit.description}
+          </Text>
+        </View>
+
+        {/* Quick Stats */}
+
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>
+              🔥
             </Text>
 
-            {/* Calendar Header */}
-            <View
-              style={styles.calendarHeader}
-            >
-              <Pressable
-                onPress={
-                  handlePreviousMonth
-                }
-                style={styles.monthButton}
-              >
-                <Text
-                  style={
-                    styles.monthButtonText
-                  }
-                >
-                  ‹
-                </Text>
-              </Pressable>
-
-              <Text
-                style={styles.monthTitle}
-              >
-                {MONTH_NAMES[calendarMonth]}{' '}
-                {calendarYear}
-              </Text>
-
-              <Pressable
-                onPress={handleNextMonth}
-                style={styles.monthButton}
-              >
-                <Text
-                  style={
-                    styles.monthButtonText
-                  }
-                >
-                  ›
-                </Text>
-              </Pressable>
-            </View>
-
-            {/* Days */}
-            <View style={styles.weekHeader}>
-              {DAY_NAMES.map((day) => (
-                <View
-                  key={day}
-                  style={styles.dayHeader}
-                >
-                  <Text
-                    style={
-                      styles.dayHeaderText
-                    }
-                  >
-                    {day}
-                  </Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Calendar Grid */}
-            <View
-              style={styles.calendarGrid}
-            >
-              {/* Empty cells before first day */}
-              {Array.from({
-                length: firstDay,
-              }).map((_, index) => (
-                <View
-                  key={`empty-${index}`}
-                  style={styles.calendarDay}
-                />
-              ))}
-
-              {/* Calendar days */}
-              {Array.from({
-                length: daysInMonth,
-              }).map((_, index) => {
-                const day = index + 1;
-
-                const date = formatDate(
-                  calendarYear,
-                  calendarMonth,
-                  day
-                );
-
-                const isCompleted =
-                  habit.completedDates.includes(
-                    date
-                  );
-
-                const isToday =
-                  date === today;
-
-                const isScheduled =
-                  isScheduledDate(
-                    date,
-                    frequency
-                  );
-
-                return (
-                  <View
-                    key={date}
-                    style={styles.calendarDay}
-                  >
-                    <View
-                      style={[
-                        styles.dayCircle,
-
-                        !isScheduled &&
-                          styles.unscheduledCircle,
-
-                        isToday &&
-                          styles.todayCircle,
-
-                        isCompleted &&
-                          styles.completedCircle,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.dayText,
-
-                          !isScheduled &&
-                            styles.unscheduledText,
-
-                          isToday &&
-                            styles.todayText,
-
-                          isCompleted &&
-                            styles.completedText,
-                        ]}
-                      >
-                        {day}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-
-            {/* Legend */}
-            <View style={styles.legend}>
-              <View
-                style={styles.legendItem}
-              >
-                <View
-                  style={[
-                    styles.legendCircle,
-                    styles.completedCircle,
-                  ]}
-                >
-                  <Text
-                    style={styles.completedText}
-                  >
-                    ✓
-                  </Text>
-                </View>
-
-                <Text style={styles.legendText}>
-                  Completed
-                </Text>
-              </View>
-
-              <View
-                style={styles.legendItem}
-              >
-                <View
-                  style={[
-                    styles.legendCircle,
-                    styles.todayCircle,
-                  ]}
-                />
-
-                <Text style={styles.legendText}>
-                  Today
-                </Text>
-              </View>
-
-              <View
-                style={styles.legendItem}
-              >
-                <View
-                  style={[
-                    styles.legendCircle,
-                    styles.unscheduledCircle,
-                  ]}
-                />
-
-                <Text style={styles.legendText}>
-                  Not scheduled
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Completion History */}
-          <View style={styles.section}>
-            <Text
-              style={styles.sectionTitle}
-            >
-              Completion History
+            <Text style={styles.statLabel}>
+              Current Streak
             </Text>
 
-            {habit.completedDates.length ===
-            0 ? (
-              <Text
-                style={styles.emptyHistory}
-              >
-                No completion history yet.
-              </Text>
-            ) : (
-              [...habit.completedDates]
-                .reverse()
-                .map((date) => (
-                  <View
-                    key={date}
-                    style={styles.historyItem}
-                  >
-                    <Text
-                      style={
-                        styles.historyIcon
-                      }
-                    >
-                      ✓
-                    </Text>
+            <Text style={styles.statValue}>
+              {currentStreak}
+            </Text>
 
-                    <Text
-                      style={
-                        styles.historyDate
-                      }
-                    >
-                      {date}
-                    </Text>
-                  </View>
-                ))
-            )}
+            <Text style={styles.statUnit}>
+              {currentStreak === 1
+                ? 'day'
+                : 'days'}
+            </Text>
           </View>
 
-          {/* Actions */}
-          <View style={styles.actions}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.editButton,
-                pressed &&
-                  styles.buttonPressed,
-              ]}
-              onPress={handleEdit}
-            >
-              <Text
-                style={styles.editButtonText}
-              >
-                Edit Habit
-              </Text>
-            </Pressable>
+          <View style={styles.statCard}>
+            <Text style={styles.statEmoji}>
+              ✓
+            </Text>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.deleteButton,
-                pressed &&
-                  styles.buttonPressed,
-              ]}
-              onPress={handleDelete}
+            <Text style={styles.statLabel}>
+              Completed
+            </Text>
+
+            <Text style={styles.statValue}>
+              {completedDates.length}
+            </Text>
+
+            <Text style={styles.statUnit}>
+              total
+            </Text>
+          </View>
+        </View>
+
+        {/* Completion */}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Weekly Completion
+          </Text>
+
+          <View style={styles.completionCard}>
+            <View
+              style={
+                styles.completionHeader
+              }
             >
               <Text
                 style={
-                  styles.deleteButtonText
+                  styles.completionDescription
                 }
               >
-                Delete Habit
+                Last 7 days
               </Text>
-            </Pressable>
+
+              <Text
+                style={
+                  styles.completionPercentage
+                }
+              >
+                {completionRate}%
+              </Text>
+            </View>
+
+            <View
+              style={
+                styles.progressBackground
+              }
+            >
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${completionRate}%`,
+                  },
+                ]}
+              />
+            </View>
+
+            <Text style={styles.completionCount}>
+              {weeklyCompleted} of{' '}
+              {weeklyScheduled} scheduled
+              check-ins completed
+            </Text>
           </View>
-        </ScrollView>
-      </SafeAreaView>
-    </>
+        </View>
+
+        {/* 7 Day History */}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Last 7 Days
+          </Text>
+
+          <View style={styles.historyCard}>
+            {lastSevenDays.map((date) => {
+              const dateObject =
+                new Date(
+                  `${date}T00:00:00`
+                );
+
+              const dayName =
+                DAY_LABELS[
+                  dateObject.getDay()
+                ];
+
+              const dayNumber =
+                dateObject.getDate();
+
+              const isCompleted =
+                completedDates.includes(
+                  date
+                );
+
+              const isScheduled =
+                isScheduledDate(
+                  date,
+                  habit.frequency ??
+                    'daily'
+                );
+
+              const isToday =
+                date === today;
+
+              return (
+                <View
+                  key={date}
+                  style={
+                    styles.historyItem
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.historyDay,
+                      isToday &&
+                        styles.historyDayToday,
+                    ]}
+                  >
+                    {dayName}
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.historyCircle,
+                      isCompleted &&
+                        styles.historyCircleCompleted,
+                      !isScheduled &&
+                        styles.historyCircleDisabled,
+                      isToday &&
+                        styles.historyCircleToday,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.historyCircleText,
+                        isCompleted &&
+                          styles.historyCircleTextCompleted,
+                        !isScheduled &&
+                          styles.historyCircleTextDisabled,
+                      ]}
+                    >
+                      {isCompleted
+                        ? '✓'
+                        : isScheduled
+                          ? '–'
+                          : '·'}
+                    </Text>
+                  </View>
+
+                  <Text
+                    style={[
+                      styles.historyNumber,
+                      isToday &&
+                        styles.historyNumberToday,
+                    ]}
+                  >
+                    {dayNumber}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Habit Settings */}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Habit Settings
+          </Text>
+
+          <View style={styles.settingsCard}>
+            <View style={styles.settingRow}>
+              <View
+                style={styles.settingIcon}
+              >
+                <Text>📅</Text>
+              </View>
+
+              <View
+                style={styles.settingContent}
+              >
+                <Text
+                  style={styles.settingLabel}
+                >
+                  Frequency
+                </Text>
+
+                <Text
+                  style={
+                    styles.settingValue
+                  }
+                >
+                  {frequencyLabel}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.settingRow}>
+              <View
+                style={styles.settingIcon}
+              >
+                <Text>🔔</Text>
+              </View>
+
+              <View
+                style={styles.settingContent}
+              >
+                <Text
+                  style={styles.settingLabel}
+                >
+                  Reminder
+                </Text>
+
+                <Text
+                  style={styles.settingValue}
+                >
+                  {habit.reminderEnabled
+                    ? `Every scheduled day at ${String(
+                        habit.reminderHour
+                      ).padStart(2, '0')}:${String(
+                        habit.reminderMinute
+                      ).padStart(2, '0')}`
+                    : 'Disabled'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+
+        {/* Edit Button */}
+
+        <Pressable
+          style={({ pressed }) => [
+            styles.editHabitButton,
+            pressed &&
+              styles.editHabitButtonPressed,
+          ]}
+          onPress={() =>
+            router.push({
+              pathname: '/create',
+              params: { id: habit.id },
+            })
+          }
+        >
+          <Text
+            style={styles.editHabitButtonText}
+          >
+            ✏️  Edit Habit
+          </Text>
+        </Pressable>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -582,316 +474,370 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  back: {
-    marginBottom: 24,
-  },
-
-  backText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2563EB',
-  },
+  /* Header */
 
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 24,
   },
 
-  title: {
-    fontSize: 30,
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  backButtonText: {
+    fontSize: 32,
+    color: '#0F172A',
+    lineHeight: 36,
+    marginTop: -4,
+  },
+
+  headerTitle: {
+    fontSize: 20,
     fontWeight: '700',
     color: '#0F172A',
-    marginBottom: 8,
   },
 
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#64748B',
-  },
-
-  frequencyBadge: {
-    alignSelf: 'flex-start',
-    marginTop: 14,
+  editButton: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: '#EFF6FF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
   },
 
-  frequencyBadgeLabel: {
-    fontSize: 13,
-    color: '#64748B',
-  },
-
-  frequencyBadgeValue: {
-    fontSize: 13,
+  editButtonText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#2563EB',
   },
 
-  statsContainer: {
+  /* Hero */
+
+  heroCard: {
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 24,
+    marginBottom: 16,
+  },
+
+  heroIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+
+  heroEmoji: {
+    fontSize: 30,
+    fontWeight: '800',
+    color: '#2563EB',
+  },
+
+  habitName: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#0F172A',
+    textAlign: 'center',
+  },
+
+  habitDescription: {
+    marginTop: 6,
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+
+  /* Stats */
+
+  statsRow: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 28,
   },
 
   statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 18,
   },
 
-  statIcon: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
-
-  statValue: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#0F172A',
+  statEmoji: {
+    fontSize: 22,
+    marginBottom: 10,
   },
 
   statLabel: {
-    marginTop: 4,
-    fontSize: 13,
+    fontSize: 12,
+    fontWeight: '600',
     color: '#64748B',
-    textAlign: 'center',
   },
 
-  calendarSection: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+  statValue: {
+    marginTop: 5,
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#0F172A',
   },
+
+  statUnit: {
+    fontSize: 12,
+    color: '#94A3B8',
+  },
+
+  /* Sections */
 
   section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 24,
+    marginBottom: 28,
   },
 
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 16,
+    marginBottom: 12,
   },
 
-  calendarHeader: {
+  /* Completion */
+
+  completionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 18,
+  },
+
+  completionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
   },
 
-  monthTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#0F172A',
+  completionDescription: {
+    fontSize: 13,
+    color: '#64748B',
   },
 
-  monthButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  monthButtonText: {
-    fontSize: 28,
-    lineHeight: 30,
+  completionPercentage: {
+    fontSize: 24,
+    fontWeight: '800',
     color: '#2563EB',
   },
 
-  weekHeader: {
-    flexDirection: 'row',
-    marginBottom: 8,
+  progressBackground: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E2E8F0',
+    overflow: 'hidden',
+    marginTop: 14,
   },
 
-  dayHeader: {
+  progressFill: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: '#2563EB',
+  },
+
+  completionCount: {
+    marginTop: 10,
+    fontSize: 12,
+    color: '#64748B',
+  },
+
+  /* History */
+
+  historyCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 18,
+  },
+
+  historyItem: {
     flex: 1,
     alignItems: 'center',
   },
 
-  dayHeaderText: {
-    fontSize: 12,
+  historyDay: {
+    fontSize: 11,
     fontWeight: '600',
-    color: '#94A3B8',
+    color: '#64748B',
+    marginBottom: 8,
   },
 
-  calendarGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  historyDayToday: {
+    color: '#2563EB',
   },
 
-  calendarDay: {
-    width: '14.2857%',
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  dayCircle: {
+  historyCircle: {
     width: 34,
     height: 34,
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  dayText: {
-    fontSize: 14,
-    color: '#334155',
-  },
-
-  unscheduledCircle: {
     backgroundColor: '#F1F5F9',
   },
 
-  unscheduledText: {
-    color: '#CBD5E1',
-  },
-
-  completedCircle: {
+  historyCircleCompleted: {
     backgroundColor: '#DCFCE7',
   },
 
-  completedText: {
-    color: '#16A34A',
-    fontWeight: '700',
+  historyCircleDisabled: {
+    backgroundColor: '#E2E8F0',
   },
 
-  todayCircle: {
+  historyCircleToday: {
     borderWidth: 2,
     borderColor: '#2563EB',
   },
 
-  todayText: {
+  historyCircleText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#94A3B8',
+  },
+
+  historyCircleTextCompleted: {
+    color: '#16A34A',
+  },
+
+  historyCircleTextDisabled: {
+    color: '#CBD5E1',
+  },
+
+  historyNumber: {
+    marginTop: 7,
+    fontSize: 11,
+    color: '#94A3B8',
+  },
+
+  historyNumberToday: {
     color: '#2563EB',
     fontWeight: '700',
   },
 
-  legend: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
+  /* Settings */
+
+  settingsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 18,
   },
 
-  legendItem: {
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    paddingVertical: 16,
   },
 
-  legendCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+  settingIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
   },
 
-  legendText: {
-    fontSize: 12,
+  settingContent: {
+    flex: 1,
+  },
+
+  settingLabel: {
+    fontSize: 13,
     color: '#64748B',
   },
 
-  emptyHistory: {
-    fontSize: 14,
-    color: '#94A3B8',
-  },
-
-  historyItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-
-  historyIcon: {
-    marginRight: 12,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#16A34A',
-  },
-
-  historyDate: {
+  settingValue: {
+    marginTop: 3,
     fontSize: 15,
-    color: '#334155',
+    fontWeight: '600',
+    color: '#0F172A',
   },
 
-  actions: {
-    gap: 12,
+  divider: {
+    height: 1,
+    backgroundColor: '#E2E8F0',
   },
 
-  editButton: {
-    backgroundColor: '#2563EB',
+  /* Edit */
+
+  editHabitButton: {
+    backgroundColor: '#0F172A',
+    borderRadius: 16,
     paddingVertical: 16,
-    borderRadius: 14,
     alignItems: 'center',
   },
 
-  editButtonText: {
+  editHabitButtonPressed: {
+    opacity: 0.7,
+  },
+
+  editHabitButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
 
-  deleteButton: {
-    backgroundColor: '#FEE2E2',
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-  },
+  /* Not Found */
 
-  deleteButtonText: {
-    color: '#DC2626',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-
-  buttonPressed: {
-    opacity: 0.8,
-  },
-
-  emptyContainer: {
+  notFound: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    padding: 30,
   },
 
-  emptyTitle: {
-    fontSize: 20,
-    fontWeight: '700',
+  notFoundEmoji: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+
+  notFoundTitle: {
+    fontSize: 22,
+    fontWeight: '800',
     color: '#0F172A',
-    marginBottom: 20,
   },
 
-  backButton: {
-    backgroundColor: '#2563EB',
+  notFoundDescription: {
+    marginTop: 6,
+    fontSize: 14,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+
+  backHomeButton: {
+    marginTop: 20,
+    backgroundColor: '#0F172A',
     paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderRadius: 12,
   },
 
-  backButtonText: {
+  backHomeButtonText: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

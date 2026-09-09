@@ -23,6 +23,11 @@ export default function RootLayout() {
 
       <Stack>
         <Stack.Screen
+          name="habit/[id]"
+          options={{ headerShown: false }}
+        />
+        
+        <Stack.Screen
           name="welcome"
           options={{
             headerShown: false,
