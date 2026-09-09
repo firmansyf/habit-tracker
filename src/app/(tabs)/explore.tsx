@@ -1,4 +1,10 @@
-import { useRouter } from 'expo-router';
+
+import * as Notifications from 'expo-notifications';
+import {
+  useFocusEffect,
+  useRouter,
+} from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   Pressable,
@@ -10,6 +16,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHabitStore } from '@/store/habit-store';
+import { cancelHabitReminder } from '@/utils/notification';
+
+type NotificationStatus =
+  | 'granted'
+  | 'denied'
+  | 'undetermined';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -26,6 +38,36 @@ export default function SettingsScreen() {
     (state) => state.resetAllData
   );
 
+  const [notificationStatus, setNotificationStatus] =
+    useState<NotificationStatus>('undetermined');
+
+  const checkNotificationPermission =
+    useCallback(async () => {
+      try {
+        const { status } =
+          await Notifications.getPermissionsAsync();
+
+        if (status === 'granted') {
+          setNotificationStatus('granted');
+        } else if (status === 'denied') {
+          setNotificationStatus('denied');
+        } else {
+          setNotificationStatus('undetermined');
+        }
+      } catch (error) {
+        console.error(
+          'Failed to check notification permission:',
+          error
+        );
+      }
+    }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      checkNotificationPermission();
+    }, [checkNotificationPermission])
+  );
+
   const handleResetData = () => {
     Alert.alert(
       'Reset All Data',
@@ -38,12 +80,68 @@ export default function SettingsScreen() {
         {
           text: 'Reset',
           style: 'destructive',
-          onPress: () => {
-            resetAllData();
+          onPress: async () => {
+            try {
+              const notificationIds =
+                habits.flatMap(
+                  (habit) =>
+                    habit.notificationIds ?? []
+                );
+
+              await cancelHabitReminder(
+                notificationIds
+              );
+            } catch (error) {
+              console.error(
+                'Failed to cancel notifications during reset:',
+                error
+              );
+            } finally {
+              resetAllData();
+            }
           },
         },
       ]
     );
+  };
+
+  const getNotificationLabel = () => {
+    switch (notificationStatus) {
+      case 'granted':
+        return 'Active';
+
+      case 'denied':
+        return 'Disabled';
+
+      default:
+        return 'Not Set';
+    }
+  };
+
+  const getNotificationBadgeStyle = () => {
+    switch (notificationStatus) {
+      case 'granted':
+        return styles.statusBadge;
+
+      case 'denied':
+        return styles.statusBadgeDanger;
+
+      default:
+        return styles.statusBadgeDisabled;
+    }
+  };
+
+  const getNotificationTextStyle = () => {
+    switch (notificationStatus) {
+      case 'granted':
+        return styles.statusText;
+
+      case 'denied':
+        return styles.statusTextDanger;
+
+      default:
+        return styles.statusTextDisabled;
+    }
   };
 
   return (
@@ -93,7 +191,11 @@ export default function SettingsScreen() {
                   Username
                 </Text>
 
-                <Text style={styles.settingDescription}>
+                <Text
+                  style={
+                    styles.settingDescription
+                  }
+                >
                   {username ??
                     'Set your username'}
                 </Text>
@@ -128,15 +230,23 @@ export default function SettingsScreen() {
                   Notifications
                 </Text>
 
-                <Text style={styles.settingDescription}>
+                <Text
+                  style={
+                    styles.settingDescription
+                  }
+                >
                   Manage reminders from your
                   device settings
                 </Text>
               </View>
 
-              <View style={styles.statusBadge}>
-                <Text style={styles.statusText}>
-                  Active
+              <View
+                style={getNotificationBadgeStyle()}
+              >
+                <Text
+                  style={getNotificationTextStyle()}
+                >
+                  {getNotificationLabel()}
                 </Text>
               </View>
             </View>
@@ -157,13 +267,19 @@ export default function SettingsScreen() {
                   Dark Mode
                 </Text>
 
-                <Text style={styles.settingDescription}>
+                <Text
+                  style={
+                    styles.settingDescription
+                  }
+                >
                   Coming soon
                 </Text>
               </View>
 
               <View
-                style={styles.statusBadgeDisabled}
+                style={
+                  styles.statusBadgeDisabled
+                }
               >
                 <Text
                   style={
@@ -199,7 +315,11 @@ export default function SettingsScreen() {
                   Your Habits
                 </Text>
 
-                <Text style={styles.settingDescription}>
+                <Text
+                  style={
+                    styles.settingDescription
+                  }
+                >
                   {habits.length}{' '}
                   {habits.length === 1
                     ? 'habit'
@@ -237,7 +357,11 @@ export default function SettingsScreen() {
                   Reset All Data
                 </Text>
 
-                <Text style={styles.settingDescription}>
+                <Text
+                  style={
+                    styles.settingDescription
+                  }
+                >
                   Delete all habits and progress
                 </Text>
               </View>
@@ -410,6 +534,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#16A34A',
+  },
+
+  statusBadgeDanger: {
+    backgroundColor: '#FEF2F2',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+
+  statusTextDanger: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#DC2626',
   },
 
   statusBadgeDisabled: {
