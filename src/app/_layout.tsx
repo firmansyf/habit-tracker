@@ -6,25 +6,48 @@ import {
   useRouter,
   useSegments,
 } from 'expo-router';
+
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+
+import {
+  useEffect,
+} from 'react';
+
+import {
+  useColorScheme,
+} from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+
 import { useHabitStore } from '@/store/habit-store';
+
+import { useThemeStore } from '@/store/theme-store';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const systemColorScheme =
+    useColorScheme();
 
-  const username = useHabitStore(
-    (state) => state.username
-  );
+  const themeMode =
+    useThemeStore(
+      (state) => state.themeMode
+    );
 
-  const hasHydrated = useHabitStore(
-    (state) => state.hasHydrated
-  );
+  const username =
+    useHabitStore(
+      (state) => state.username
+    );
+
+  const hasHydrated =
+    useHabitStore(
+      (state) => state.hasHydrated
+    );
+
+  const colorScheme =
+    themeMode === 'system'
+      ? systemColorScheme
+      : themeMode;
 
   return (
     <ThemeProvider
@@ -37,7 +60,9 @@ export default function RootLayout() {
       <AnimatedSplashOverlay />
 
       {hasHydrated && (
-        <RootNavigation username={username} />
+        <RootNavigation
+          username={username}
+        />
       )}
     </ThemeProvider>
   );
@@ -49,7 +74,9 @@ function RootNavigation({
   username: string | null;
 }) {
   const router = useRouter();
-  const segments = useSegments();
+
+  const segments =
+    useSegments();
 
   useEffect(() => {
     if (!segments.length) {

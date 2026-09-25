@@ -9,7 +9,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import EmptyState from '@/components/EmptyState';
+import HabitCard from '@/components/HabitCard';
+import ProgressCard from '@/components/ProgressCard';
+import StreakCard from '@/components/StreakCard';
+
+import { useAppTheme } from '@/hooks/useAppTheme';
+
 import { useHabitStore } from '@/store/habit-store';
+
 import {
   getCurrentStreak,
   getToday,
@@ -24,23 +32,33 @@ import {
 } from '@/utils/greeting';
 
 import { useEffect } from 'react';
- 
-import EmptyState from '@/components/EmptyState';
-import HabitCard from '@/components/HabitCard';
-import ProgressCard from '@/components/ProgressCard';
-import StreakCard from '@/components/StreakCard';
 
 export default function HomeScreen() {
   const router = useRouter();
+
+  const { colors } = useAppTheme();
+
   const greeting = getGreeting();
-  
-  const habits = useHabitStore((state) => state.habits);
-  const toggleHabit = useHabitStore((state) => state.toggleHabit);
-  
-  const username = useHabitStore((state) => state.username);
-  const initial = getInitial(username ?? "");
-  
-  const deleteHabit = useHabitStore((state) => state.deleteHabit);
+
+  const habits = useHabitStore(
+    (state) => state.habits
+  );
+
+  const toggleHabit = useHabitStore(
+    (state) => state.toggleHabit
+  );
+
+  const username = useHabitStore(
+    (state) => state.username
+  );
+
+  const deleteHabit = useHabitStore(
+    (state) => state.deleteHabit
+  );
+
+  const initial = getInitial(
+    username ?? ''
+  );
 
   const today = getToday();
 
@@ -58,118 +76,158 @@ export default function HomeScreen() {
         habit.completedDates.includes(today)
     ).length;
 
-  const totalHabits = scheduledHabits.length;
+  const totalHabits =
+    scheduledHabits.length;
 
-  const allCompletedDates = habits.flatMap(
-    (habit) => habit.completedDates ?? []
-  );
+  const allCompletedDates =
+    habits.flatMap(
+      (habit) =>
+        habit.completedDates ?? []
+    );
 
-  const currentStreak = getCurrentStreak(
-    [...new Set(allCompletedDates)]
-  );
+  const currentStreak =
+    getCurrentStreak([
+      ...new Set(allCompletedDates),
+    ]);
 
   const handleDeleteHabit = (
-      id: string,
-      name: string,
-      notificationIds: string[]
-    ) => {
-      Alert.alert(
-        'Delete Habit',
-        `Are you sure you want to delete "${name}"?`,
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel',
-          },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                /*
-                * Cancel semua notification
-                * yang dimiliki habit.
-                */
-                await cancelHabitReminder(
-                  notificationIds
-                );
+    id: string,
+    name: string,
+    notificationIds: string[]
+  ) => {
+    Alert.alert(
+      'Delete Habit',
+      `Are you sure you want to delete "${name}"?`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
 
-                /*
-                * Setelah notification dibatalkan,
-                * hapus habit dari store.
-                */
-                deleteHabit(id);
-              } catch (error) {
-                console.error(
-                  'Failed to cancel habit reminder:',
-                  error
-                );
+          onPress: async () => {
+            try {
+              await cancelHabitReminder(
+                notificationIds
+              );
 
-                /*
-                * Tetap hapus habit dari aplikasi
-                * meskipun cancellation notification gagal.
-                */
-                deleteHabit(id);
-              }
-            },
+              deleteHabit(id);
+            } catch (error) {
+              console.error(
+                'Failed to cancel habit reminder:',
+                error
+              );
+
+              deleteHabit(id);
+            }
           },
-        ]
-      );
-   };
+        },
+      ]
+    );
+  };
 
   useEffect(() => {
     if (!username) {
       router.replace('/welcome');
     }
-  }, [username]);
-
+  }, [username, router]);
 
   if (!username) {
     return null;
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            colors.background,
+        },
+      ]}
+    >
       <FlatList
         data={habits}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={
+          styles.content
+        }
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
             {/* Header */}
+
             <View style={styles.header}>
               <View>
-                <Text style={styles.greeting}>
+                <Text
+                  style={[
+                    styles.greeting,
+                    {
+                      color:
+                        colors.textSecondary,
+                    },
+                  ]}
+                >
                   {greeting} 👋
                 </Text>
 
-                <Text style={styles.name}>
+                <Text
+                  style={[
+                    styles.name,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
                   {username}
                 </Text>
               </View>
 
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
+              <View
+                style={[
+                  styles.avatar,
+                  {
+                    backgroundColor:
+                      colors.primary,
+                  },
+                ]}
+              >
+                <Text
+                  style={styles.avatarText}
+                >
                   {initial}
                 </Text>
               </View>
             </View>
 
-            {/* Streak Card */}
-           <StreakCard currentStreak={currentStreak} />
+            {/* Streak */}
 
-            {/* Today's Habits */}
+            <StreakCard
+              currentStreak={
+                currentStreak
+              }
+            />
+
+            {/* Progress */}
+
             <ProgressCard
-              completedHabits={completedHabits}
-              totalHabits={totalHabits}
+              completedHabits={
+                completedHabits
+              }
+              totalHabits={
+                totalHabits
+              }
             />
           </View>
         }
         renderItem={({ item }) => (
-         <HabitCard
+          <HabitCard
             habit={item}
-            onToggle={() => toggleHabit(item.id)}
+            onToggle={() =>
+              toggleHabit(item.id)
+            }
             onEdit={() =>
               router.push({
                 pathname: '/create',
@@ -182,7 +240,8 @@ export default function HomeScreen() {
               handleDeleteHabit(
                 item.id,
                 item.name,
-                item.notificationIds ?? []
+                item.notificationIds ??
+                  []
               )
             }
             onDetail={() =>
@@ -200,22 +259,34 @@ export default function HomeScreen() {
             <Pressable
               style={({ pressed }) => [
                 styles.addButton,
-                pressed && styles.addButtonPressed,
+                {
+                  backgroundColor:
+                    colors.primary,
+                },
+                pressed &&
+                  styles.addButtonPressed,
               ]}
-              onPress={() => router.push('/create')}
+              onPress={() =>
+                router.push('/create')
+              }
             >
-              <Text style={styles.addButtonText}>
+              <Text
+                style={
+                  styles.addButtonText
+                }
+              >
                 + Add Habit
               </Text>
             </Pressable>
           ) : null
         }
-         ListEmptyComponent={
+        ListEmptyComponent={
           <EmptyState
-            onAddHabit={() => router.push('/create')}
+            onAddHabit={() =>
+              router.push('/create')
+            }
           />
         }
-
       />
     </SafeAreaView>
   );
@@ -224,7 +295,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
 
   content: {
@@ -241,21 +311,18 @@ const styles = StyleSheet.create({
 
   greeting: {
     fontSize: 16,
-    color: '#64748B',
     marginBottom: 4,
   },
 
   name: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#0F172A',
   },
 
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#0F172A',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -267,7 +334,6 @@ const styles = StyleSheet.create({
   },
 
   addButton: {
-    backgroundColor: '#0F172A',
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
@@ -283,22 +349,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-
-  deleteButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-
-  deleteButtonPressed: {
-    opacity: 0.5,
-  },
-
-  deleteButtonText: {
-    fontSize: 18,
-  },
-
 });

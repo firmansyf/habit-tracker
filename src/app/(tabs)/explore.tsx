@@ -1,4 +1,3 @@
-
 import * as Notifications from 'expo-notifications';
 import {
   useFocusEffect,
@@ -16,19 +15,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useHabitStore } from '@/store/habit-store';
+import { useThemeStore } from '@/store/theme-store';
 import { cancelHabitReminder } from '@/utils/notification';
 
 type NotificationStatus =
-  | 'granted'
-  | 'denied'
-  | 'undetermined';
+  | 'active'
+  | 'disabled'
+  | 'not-set';
 
 export default function SettingsScreen() {
   const router = useRouter();
-
-  const username = useHabitStore(
-    (state) => state.username
-  );
 
   const habits = useHabitStore(
     (state) => state.habits
@@ -38,28 +34,37 @@ export default function SettingsScreen() {
     (state) => state.resetAllData
   );
 
+  const themeMode = useThemeStore(
+    (state) => state.themeMode
+  );
+
+  const setThemeMode = useThemeStore(
+    (state) => state.setThemeMode
+  );
+
   const [notificationStatus, setNotificationStatus] =
-    useState<NotificationStatus>('undetermined');
+    useState<NotificationStatus>('not-set');
+
+  /* -------------------------------------------------------------------------- */
+  /* Notification Status                                                        */
+  /* -------------------------------------------------------------------------- */
 
   const checkNotificationPermission =
     useCallback(async () => {
-      try {
-        const { status } =
-          await Notifications.getPermissionsAsync();
+      const { status } =
+        await Notifications.getPermissionsAsync();
 
-        if (status === 'granted') {
-          setNotificationStatus('granted');
-        } else if (status === 'denied') {
-          setNotificationStatus('denied');
-        } else {
-          setNotificationStatus('undetermined');
-        }
-      } catch (error) {
-        console.error(
-          'Failed to check notification permission:',
-          error
-        );
+      if (status === 'granted') {
+        setNotificationStatus('active');
+        return;
       }
+
+      if (status === 'denied') {
+        setNotificationStatus('disabled');
+        return;
+      }
+
+      setNotificationStatus('not-set');
     }, []);
 
   useFocusEffect(
@@ -68,10 +73,14 @@ export default function SettingsScreen() {
     }, [checkNotificationPermission])
   );
 
-  const handleResetData = () => {
+  /* -------------------------------------------------------------------------- */
+  /* Reset All Data                                                             */
+  /* -------------------------------------------------------------------------- */
+
+  const handleResetAllData = () => {
     Alert.alert(
       'Reset All Data',
-      'This will permanently delete all habits, progress, and your username. This action cannot be undone.',
+      'This will permanently delete all habits and your profile. This action cannot be undone.',
       [
         {
           text: 'Cancel',
@@ -82,22 +91,35 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              /*
+               * Cancel semua scheduled notifications
+               * sebelum data habit dihapus.
+               */
               const notificationIds =
                 habits.flatMap(
                   (habit) =>
                     habit.notificationIds ?? []
                 );
 
-              await cancelHabitReminder(
-                notificationIds
-              );
+              if (notificationIds.length > 0) {
+                await cancelHabitReminder(
+                  notificationIds
+                );
+              }
+
+              resetAllData();
+
+              router.replace('/welcome');
             } catch (error) {
               console.error(
-                'Failed to cancel notifications during reset:',
+                'Failed to reset all data:',
                 error
               );
-            } finally {
-              resetAllData();
+
+              Alert.alert(
+                'Error',
+                'Failed to reset all data.'
+              );
             }
           },
         },
@@ -105,44 +127,27 @@ export default function SettingsScreen() {
     );
   };
 
-  const getNotificationLabel = () => {
-    switch (notificationStatus) {
-      case 'granted':
-        return 'Active';
+  /* -------------------------------------------------------------------------- */
+  /* Helpers                                                                    */
+  /* -------------------------------------------------------------------------- */
 
-      case 'denied':
-        return 'Disabled';
+  const notificationLabel =
+    notificationStatus === 'active'
+      ? 'Active'
+      : notificationStatus === 'disabled'
+        ? 'Disabled'
+        : 'Not Set';
 
-      default:
-        return 'Not Set';
-    }
-  };
+  const notificationDescription =
+    notificationStatus === 'active'
+      ? 'Notifications are enabled'
+      : notificationStatus === 'disabled'
+        ? 'Notifications are disabled'
+        : 'Notification permission has not been set';
 
-  const getNotificationBadgeStyle = () => {
-    switch (notificationStatus) {
-      case 'granted':
-        return styles.statusBadge;
-
-      case 'denied':
-        return styles.statusBadgeDanger;
-
-      default:
-        return styles.statusBadgeDisabled;
-    }
-  };
-
-  const getNotificationTextStyle = () => {
-    switch (notificationStatus) {
-      case 'granted':
-        return styles.statusText;
-
-      case 'denied':
-        return styles.statusTextDanger;
-
-      default:
-        return styles.statusTextDisabled;
-    }
-  };
+  /* -------------------------------------------------------------------------- */
+  /* Render                                                                     */
+  /* -------------------------------------------------------------------------- */
 
   return (
     <SafeAreaView style={styles.container}>
@@ -151,266 +156,337 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-
         <View style={styles.header}>
           <Text style={styles.title}>
             Settings
           </Text>
 
           <Text style={styles.subtitle}>
-            Manage your Habit Tracker
+            Customize your HabitTracker experience.
           </Text>
         </View>
 
-        {/* Profile */}
+        {/* ------------------------------------------------------------------ */}
+        {/* Appearance                                                         */}
+        {/* ------------------------------------------------------------------ */}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Appearance
+          </Text>
+
+          <Text style={styles.sectionDescription}>
+            Choose how HabitTracker looks on your
+            device.
+          </Text>
+
+          <View style={styles.themeOptions}>
+            {/* System */}
+            <Pressable
+              accessibilityRole="radio"
+              accessibilityState={{
+                selected:
+                  themeMode === 'system',
+              }}
+              onPress={() =>
+                setThemeMode('system')
+              }
+              style={({ pressed }) => [
+                styles.themeOption,
+                themeMode === 'system' &&
+                  styles.themeOptionSelected,
+                pressed &&
+                  styles.themeOptionPressed,
+              ]}
+            >
+              <View style={styles.themeOptionIcon}>
+                <Text style={styles.themeIconText}>
+                  📱
+                </Text>
+              </View>
+
+              <View
+                style={styles.themeOptionContent}
+              >
+                <Text
+                  style={[
+                    styles.themeOptionTitle,
+                    themeMode === 'system' &&
+                      styles.themeOptionTitleSelected,
+                  ]}
+                >
+                  System
+                </Text>
+
+                <Text
+                  style={styles.themeOptionDescription}
+                >
+                  Follow your device theme
+                </Text>
+              </View>
+
+              {themeMode === 'system' && (
+                <View style={styles.checkCircle}>
+                  <Text style={styles.checkText}>
+                    ✓
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+
+            {/* Light */}
+            <Pressable
+              accessibilityRole="radio"
+              accessibilityState={{
+                selected:
+                  themeMode === 'light',
+              }}
+              onPress={() =>
+                setThemeMode('light')
+              }
+              style={({ pressed }) => [
+                styles.themeOption,
+                themeMode === 'light' &&
+                  styles.themeOptionSelected,
+                pressed &&
+                  styles.themeOptionPressed,
+              ]}
+            >
+              <View style={styles.themeOptionIcon}>
+                <Text style={styles.themeIconText}>
+                  ☀️
+                </Text>
+              </View>
+
+              <View
+                style={styles.themeOptionContent}
+              >
+                <Text
+                  style={[
+                    styles.themeOptionTitle,
+                    themeMode === 'light' &&
+                      styles.themeOptionTitleSelected,
+                  ]}
+                >
+                  Light
+                </Text>
+
+                <Text
+                  style={styles.themeOptionDescription}
+                >
+                  Always use light mode
+                </Text>
+              </View>
+
+              {themeMode === 'light' && (
+                <View style={styles.checkCircle}>
+                  <Text style={styles.checkText}>
+                    ✓
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+
+            {/* Dark */}
+            <Pressable
+              accessibilityRole="radio"
+              accessibilityState={{
+                selected:
+                  themeMode === 'dark',
+              }}
+              onPress={() =>
+                setThemeMode('dark')
+              }
+              style={({ pressed }) => [
+                styles.themeOption,
+                themeMode === 'dark' &&
+                  styles.themeOptionSelected,
+                pressed &&
+                  styles.themeOptionPressed,
+              ]}
+            >
+              <View style={styles.themeOptionIcon}>
+                <Text style={styles.themeIconText}>
+                  🌙
+                </Text>
+              </View>
+
+              <View
+                style={styles.themeOptionContent}
+              >
+                <Text
+                  style={[
+                    styles.themeOptionTitle,
+                    themeMode === 'dark' &&
+                      styles.themeOptionTitleSelected,
+                  ]}
+                >
+                  Dark
+                </Text>
+
+                <Text
+                  style={styles.themeOptionDescription}
+                >
+                  Always use dark mode
+                </Text>
+              </View>
+
+              {themeMode === 'dark' && (
+                <View style={styles.checkCircle}>
+                  <Text style={styles.checkText}>
+                    ✓
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        </View>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* Notifications                                                      */}
+        {/* ------------------------------------------------------------------ */}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            Notifications
+          </Text>
+
+          <View style={styles.settingCard}>
+            <View style={styles.settingIcon}>
+              <Text style={styles.settingIconText}>
+                🔔
+              </Text>
+            </View>
+
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>
+                Habit Reminders
+              </Text>
+
+              <Text style={styles.settingDescription}>
+                {notificationDescription}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.statusBadge,
+                notificationStatus === 'active' &&
+                  styles.statusBadgeActive,
+                notificationStatus === 'disabled' &&
+                  styles.statusBadgeDisabled,
+                notificationStatus === 'not-set' &&
+                  styles.statusBadgeNotSet,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.statusText,
+                  notificationStatus === 'active' &&
+                    styles.statusTextActive,
+                  notificationStatus === 'disabled' &&
+                    styles.statusTextDisabled,
+                  notificationStatus === 'not-set' &&
+                    styles.statusTextNotSet,
+                ]}
+              >
+                {notificationLabel}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* Profile                                                            */}
+        {/* ------------------------------------------------------------------ */}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             Profile
           </Text>
 
-          <View style={styles.card}>
-            <Pressable
-              style={({ pressed }) => [
-                styles.settingRow,
-                pressed &&
-                  styles.settingPressed,
-              ]}
-              onPress={() =>
-                router.push('/profile')
-              }
-            >
-              <View style={styles.iconBox}>
-                <Text style={styles.icon}>
-                  👤
-                </Text>
-              </View>
-
-              <View style={styles.settingContent}>
-                <Text style={styles.settingTitle}>
-                  Username
-                </Text>
-
-                <Text
-                  style={
-                    styles.settingDescription
-                  }
-                >
-                  {username ??
-                    'Set your username'}
-                </Text>
-              </View>
-
-              <Text style={styles.chevron}>
-                ›
+          <Pressable
+            onPress={() =>
+              router.push('/profile')
+            }
+            style={({ pressed }) => [
+              styles.settingCard,
+              pressed &&
+                styles.settingCardPressed,
+            ]}
+          >
+            <View style={styles.settingIcon}>
+              <Text style={styles.settingIconText}>
+                👤
               </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Preferences */}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Preferences
-          </Text>
-
-          <View style={styles.card}>
-            {/* Notifications */}
-
-            <View style={styles.settingRow}>
-              <View style={styles.iconBox}>
-                <Text style={styles.icon}>
-                  🔔
-                </Text>
-              </View>
-
-              <View style={styles.settingContent}>
-                <Text style={styles.settingTitle}>
-                  Notifications
-                </Text>
-
-                <Text
-                  style={
-                    styles.settingDescription
-                  }
-                >
-                  Manage reminders from your
-                  device settings
-                </Text>
-              </View>
-
-              <View
-                style={getNotificationBadgeStyle()}
-              >
-                <Text
-                  style={getNotificationTextStyle()}
-                >
-                  {getNotificationLabel()}
-                </Text>
-              </View>
             </View>
 
-            <View style={styles.divider} />
+            <View style={styles.settingContent}>
+              <Text style={styles.settingTitle}>
+                Profile
+              </Text>
 
-            {/* Dark Mode */}
-
-            <View style={styles.settingRow}>
-              <View style={styles.iconBox}>
-                <Text style={styles.icon}>
-                  🌙
-                </Text>
-              </View>
-
-              <View style={styles.settingContent}>
-                <Text style={styles.settingTitle}>
-                  Dark Mode
-                </Text>
-
-                <Text
-                  style={
-                    styles.settingDescription
-                  }
-                >
-                  Coming soon
-                </Text>
-              </View>
-
-              <View
-                style={
-                  styles.statusBadgeDisabled
-                }
-              >
-                <Text
-                  style={
-                    styles.statusTextDisabled
-                  }
-                >
-                  Soon
-                </Text>
-              </View>
+              <Text style={styles.settingDescription}>
+                Manage your profile information
+              </Text>
             </View>
-          </View>
+
+            <Text style={styles.chevron}>
+              ›
+            </Text>
+          </Pressable>
         </View>
 
-        {/* Data */}
+        {/* ------------------------------------------------------------------ */}
+        {/* Data                                                               */}
+        {/* ------------------------------------------------------------------ */}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
             Data
           </Text>
 
-          <View style={styles.card}>
-            {/* Habit Count */}
+          <Pressable
+            onPress={handleResetAllData}
+            style={({ pressed }) => [
+              styles.resetButton,
+              pressed &&
+                styles.resetButtonPressed,
+            ]}
+          >
+            <Text style={styles.resetButtonText}>
+              Reset All Data
+            </Text>
+          </Pressable>
 
-            <View style={styles.settingRow}>
-              <View style={styles.iconBox}>
-                <Text style={styles.icon}>
-                  📊
-                </Text>
-              </View>
-
-              <View style={styles.settingContent}>
-                <Text style={styles.settingTitle}>
-                  Your Habits
-                </Text>
-
-                <Text
-                  style={
-                    styles.settingDescription
-                  }
-                >
-                  {habits.length}{' '}
-                  {habits.length === 1
-                    ? 'habit'
-                    : 'habits'}{' '}
-                  stored locally
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Reset */}
-
-            <Pressable
-              style={({ pressed }) => [
-                styles.settingRow,
-                pressed &&
-                  styles.settingPressed,
-              ]}
-              onPress={handleResetData}
-            >
-              <View
-                style={[
-                  styles.iconBox,
-                  styles.dangerIconBox,
-                ]}
-              >
-                <Text style={styles.icon}>
-                  🗑️
-                </Text>
-              </View>
-
-              <View style={styles.settingContent}>
-                <Text style={styles.dangerTitle}>
-                  Reset All Data
-                </Text>
-
-                <Text
-                  style={
-                    styles.settingDescription
-                  }
-                >
-                  Delete all habits and progress
-                </Text>
-              </View>
-
-              <Text style={styles.chevron}>
-                ›
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* About */}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            About
+          <Text style={styles.resetDescription}>
+            Delete all habits, completion history,
+            reminders, and profile information.
           </Text>
-
-          <View style={styles.aboutCard}>
-            <View style={styles.appIcon}>
-              <Text style={styles.appIconText}>
-                ✓
-              </Text>
-            </View>
-
-            <Text style={styles.appName}>
-              Habit Tracker
-            </Text>
-
-            <Text style={styles.appVersion}>
-              Version 1.0.0
-            </Text>
-
-            <Text style={styles.aboutText}>
-              Build better habits, one day at a
-              time.
-            </Text>
-          </View>
         </View>
 
         {/* Footer */}
+        <View style={styles.footer}>
+          <Text style={styles.footerTitle}>
+            HabitTracker
+          </Text>
 
-        <Text style={styles.footer}>
-          Made with Yusuf Firmansyah
-        </Text>
+          <Text style={styles.footerText}>
+            Build better habits, one day at a time.
+          </Text>
+
+          <Text style={styles.version}>
+            Version 1.0.0
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+/* ========================================================================== */
+/* Styles                                                                     */
+/* ========================================================================== */
 
 const styles = StyleSheet.create({
   container: {
@@ -422,6 +498,8 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
+
+  /* Header */
 
   header: {
     marginBottom: 28,
@@ -436,56 +514,133 @@ const styles = StyleSheet.create({
   subtitle: {
     marginTop: 6,
     fontSize: 14,
+    lineHeight: 21,
     color: '#64748B',
   },
+
+  /* Section */
 
   section: {
     marginBottom: 24,
   },
 
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 12,
+  },
+
+  sectionDescription: {
+    fontSize: 13,
+    lineHeight: 19,
     color: '#64748B',
-    marginBottom: 10,
-    paddingHorizontal: 4,
+    marginTop: -4,
+    marginBottom: 16,
   },
 
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    overflow: 'hidden',
+  /* Appearance */
+
+  themeOptions: {
+    gap: 10,
   },
 
-  settingRow: {
+  themeOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    minHeight: 72,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
   },
 
-  settingPressed: {
-    backgroundColor: '#F8FAFC',
+  themeOptionSelected: {
+    borderColor: '#2563EB',
+    backgroundColor: '#EFF6FF',
   },
 
-  iconBox: {
+  themeOptionPressed: {
+    opacity: 0.75,
+  },
+
+  themeOptionIcon: {
     width: 42,
     height: 42,
     borderRadius: 12,
-    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    backgroundColor: '#F1F5F9',
+    marginRight: 12,
   },
 
-  dangerIconBox: {
-    backgroundColor: '#FEF2F2',
+  themeIconText: {
+    fontSize: 20,
   },
 
-  icon: {
-    fontSize: 19,
+  themeOptionContent: {
+    flex: 1,
+  },
+
+  themeOptionTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+
+  themeOptionTitleSelected: {
+    color: '#2563EB',
+  },
+
+  themeOptionDescription: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 3,
+  },
+
+  checkCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  checkText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  /* Settings Card */
+
+  settingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FFFFFF',
+  },
+
+  settingCardPressed: {
+    opacity: 0.75,
+  },
+
+  settingIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F5F9',
+    marginRight: 12,
+  },
+
+  settingIconText: {
+    fontSize: 20,
   },
 
   settingContent: {
@@ -498,118 +653,110 @@ const styles = StyleSheet.create({
     color: '#0F172A',
   },
 
-  dangerTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#DC2626',
-  },
-
   settingDescription: {
     marginTop: 4,
     fontSize: 12,
-    lineHeight: 17,
+    lineHeight: 18,
     color: '#64748B',
   },
 
   chevron: {
-    marginLeft: 12,
-    fontSize: 25,
+    fontSize: 28,
     color: '#94A3B8',
+    marginLeft: 8,
   },
 
-  divider: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    marginLeft: 72,
-  },
+  /* Notification Status */
 
   statusBadge: {
-    backgroundColor: '#DCFCE7',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 20,
+    marginLeft: 8,
+  },
+
+  statusBadgeActive: {
+    backgroundColor: '#DCFCE7',
+  },
+
+  statusBadgeDisabled: {
+    backgroundColor: '#FEE2E2',
+  },
+
+  statusBadgeNotSet: {
+    backgroundColor: '#F1F5F9',
   },
 
   statusText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#16A34A',
   },
 
-  statusBadgeDanger: {
-    backgroundColor: '#FEF2F2',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
-  },
-
-  statusTextDanger: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#DC2626',
-  },
-
-  statusBadgeDisabled: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+  statusTextActive: {
+    color: '#15803D',
   },
 
   statusTextDisabled: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94A3B8',
+    color: '#B91C1C',
   },
 
-  aboutCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+  statusTextNotSet: {
+    color: '#64748B',
+  },
+
+  /* Reset */
+
+  resetButton: {
+    minHeight: 52,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-    padding: 24,
-  },
-
-  appIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: '#2563EB',
+    borderColor: '#FECACA',
+    backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
 
-  appIconText: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: '#FFFFFF',
+  resetButtonPressed: {
+    opacity: 0.7,
   },
 
-  appName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#0F172A',
+  resetButtonText: {
+    color: '#DC2626',
+    fontSize: 15,
+    fontWeight: '700',
   },
 
-  appVersion: {
-    marginTop: 4,
+  resetDescription: {
+    marginTop: 8,
     fontSize: 12,
+    lineHeight: 18,
     color: '#94A3B8',
   },
 
-  aboutText: {
-    marginTop: 14,
-    fontSize: 13,
-    color: '#64748B',
-    textAlign: 'center',
-  },
+  /* Footer */
 
   footer: {
-    textAlign: 'center',
+    alignItems: 'center',
+    paddingTop: 12,
+    paddingBottom: 20,
+  },
+
+  footerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+
+  footerText: {
+    marginTop: 4,
     fontSize: 12,
     color: '#94A3B8',
-    marginTop: 4,
+    textAlign: 'center',
+  },
+
+  version: {
+    marginTop: 8,
+    fontSize: 11,
+    color: '#CBD5E1',
   },
 });

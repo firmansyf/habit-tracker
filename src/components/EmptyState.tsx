@@ -5,6 +5,8 @@ import {
   View,
 } from 'react-native';
 
+import { useAppTheme } from '@/hooks/useAppTheme';
+
 type EmptyStateProps = {
   onAddHabit: () => void;
 };
@@ -12,17 +14,47 @@ type EmptyStateProps = {
 export default function EmptyState({
   onAddHabit,
 }: EmptyStateProps) {
+  const { colors } =
+    useAppTheme();
+
   return (
-    <View style={styles.container}>
-      <View style={styles.iconContainer}>
-        <Text style={styles.icon}>📝</Text>
+    <View
+      style={styles.container}
+    >
+      <View
+        style={[
+          styles.iconContainer,
+          {
+            backgroundColor:
+              colors.input,
+          },
+        ]}
+      >
+        <Text style={styles.icon}>
+          📝
+        </Text>
       </View>
 
-      <Text style={styles.title}>
+      <Text
+        style={[
+          styles.title,
+          {
+            color: colors.text,
+          },
+        ]}
+      >
         No habits yet
       </Text>
 
-      <Text style={styles.description}>
+      <Text
+        style={[
+          styles.description,
+          {
+            color:
+              colors.textSecondary,
+          },
+        ]}
+      >
         Start building better habits by creating
         your first one.
       </Text>
@@ -30,11 +62,20 @@ export default function EmptyState({
       <Pressable
         style={({ pressed }) => [
           styles.button,
-          pressed && styles.buttonPressed,
+          {
+            backgroundColor:
+              colors.primary,
+          },
+          pressed &&
+            styles.buttonPressed,
         ]}
         onPress={onAddHabit}
       >
-        <Text style={styles.buttonText}>
+        <Text
+          style={
+            styles.buttonText
+          }
+        >
           + Create Your First Habit
         </Text>
       </Pressable>
@@ -54,7 +95,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 18,
@@ -67,13 +107,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0F172A',
   },
 
   description: {
     fontSize: 14,
     lineHeight: 21,
-    color: '#64748B',
     textAlign: 'center',
     maxWidth: 290,
     marginTop: 8,
@@ -81,7 +119,6 @@ const styles = StyleSheet.create({
 
   button: {
     minHeight: 52,
-    backgroundColor: '#0F172A',
     borderRadius: 14,
     paddingHorizontal: 20,
     alignItems: 'center',

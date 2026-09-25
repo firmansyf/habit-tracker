@@ -1,4 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
+import { useAppTheme } from '@/hooks/useAppTheme';
 
 type ProgressCardProps = {
   completedHabits: number;
@@ -9,13 +15,20 @@ export default function ProgressCard({
   completedHabits,
   totalHabits,
 }: ProgressCardProps) {
+  const {
+    colors,
+    colorScheme,
+  } = useAppTheme();
+
   const progress =
     totalHabits === 0
       ? 0
       : Math.min(
           100,
           Math.round(
-            (completedHabits / totalHabits) * 100
+            (completedHabits /
+              totalHabits) *
+              100
           )
         );
 
@@ -23,15 +36,53 @@ export default function ProgressCard({
     totalHabits > 0 &&
     completedHabits >= totalHabits;
 
+  const percentageBackground =
+    isComplete
+      ? colorScheme === 'dark'
+        ? '#14532D'
+        : '#DCFCE7'
+      : colorScheme === 'dark'
+        ? '#12351F'
+        : '#F0FDF4';
+
   return (
-    <View style={styles.card}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor:
+            colors.card,
+          borderColor:
+            colors.border,
+        },
+      ]}
+    >
+      <View
+        style={styles.header}
+      >
+        <View
+          style={styles.headerContent}
+        >
+          <Text
+            style={[
+              styles.title,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
             Today's Progress
           </Text>
 
-          <Text style={styles.subtitle}>
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
             {isComplete
               ? 'All habits completed! 🎉'
               : 'Keep going, you are doing great.'}
@@ -41,15 +92,19 @@ export default function ProgressCard({
         <View
           style={[
             styles.percentageContainer,
-            isComplete &&
-              styles.percentageContainerComplete,
+            {
+              backgroundColor:
+                percentageBackground,
+            },
           ]}
         >
           <Text
             style={[
               styles.percentage,
-              isComplete &&
-                styles.percentageComplete,
+              {
+                color:
+                  colors.success,
+              },
             ]}
           >
             {progress}%
@@ -57,22 +112,49 @@ export default function ProgressCard({
         </View>
       </View>
 
-      <View style={styles.countRow}>
-        <Text style={styles.count}>
+      <View
+        style={styles.countRow}
+      >
+        <Text
+          style={[
+            styles.count,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
           {completedHabits} of {totalHabits}
         </Text>
 
-        <Text style={styles.countLabel}>
+        <Text
+          style={[
+            styles.countLabel,
+            {
+              color:
+                colors.textSecondary,
+            },
+          ]}
+        >
           habits completed
         </Text>
       </View>
 
-      <View style={styles.progressBackground}>
+      <View
+        style={[
+          styles.progressBackground,
+          {
+            backgroundColor:
+              colors.border,
+          },
+        ]}
+      >
         <View
           style={[
             styles.progressFill,
             {
               width: `${progress}%`,
+              backgroundColor:
+                colors.success,
             },
           ]}
         />
@@ -83,10 +165,8 @@ export default function ProgressCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     padding: 18,
     marginBottom: 20,
   },
@@ -94,18 +174,22 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
+  },
+
+  headerContent: {
+    flex: 1,
+    paddingRight: 12,
   },
 
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
   },
 
   subtitle: {
     fontSize: 12,
-    color: '#64748B',
     marginTop: 4,
   },
 
@@ -114,23 +198,13 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: 10,
     borderRadius: 10,
-    backgroundColor: '#F0FDF4',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  percentageContainerComplete: {
-    backgroundColor: '#DCFCE7',
   },
 
   percentage: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#16A34A',
-  },
-
-  percentageComplete: {
-    color: '#15803D',
   },
 
   countRow: {
@@ -142,18 +216,15 @@ const styles = StyleSheet.create({
   count: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0F172A',
   },
 
   countLabel: {
     fontSize: 13,
-    color: '#64748B',
     marginLeft: 4,
   },
 
   progressBackground: {
     height: 10,
-    backgroundColor: '#E2E8F0',
     borderRadius: 5,
     overflow: 'hidden',
     marginTop: 10,
@@ -161,7 +232,6 @@ const styles = StyleSheet.create({
 
   progressFill: {
     height: '100%',
-    backgroundColor: '#16A34A',
     borderRadius: 5,
   },
 });
