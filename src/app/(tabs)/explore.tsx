@@ -1,86 +1,40 @@
-import * as Notifications from 'expo-notifications';
-import {
-  useFocusEffect,
-  useRouter,
-} from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { useHabitStore } from '@/store/habit-store';
-import { useThemeStore } from '@/store/theme-store';
-import { cancelHabitReminder } from '@/utils/notification';
-
-type NotificationStatus =
-  | 'active'
-  | 'disabled'
-  | 'not-set';
+import { ThemeMode, useThemeStore } from '@/store/theme-store';
 
 export default function SettingsScreen() {
-  const router = useRouter();
+  const { colors, colorScheme } = useAppTheme();
 
-  const habits = useHabitStore(
-    (state) => state.habits
-  );
+  const username = useHabitStore((state) => state.username);
+  const resetAllData = useHabitStore((state) => state.resetAllData);
 
-  const resetAllData = useHabitStore(
-    (state) => state.resetAllData
-  );
+  const themeMode = useThemeStore((state) => state.themeMode);
+  const setThemeMode = useThemeStore((state) => state.setThemeMode);
 
-  const themeMode = useThemeStore(
-    (state) => state.themeMode
-  );
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
-  const setThemeMode = useThemeStore(
-    (state) => state.setThemeMode
-  );
+  const isDark = colorScheme === 'dark';
 
-  const [notificationStatus, setNotificationStatus] =
-    useState<NotificationStatus>('not-set');
+  const handleThemeChange = (mode: ThemeMode) => {
+    setThemeMode(mode);
+  };
 
-  /* -------------------------------------------------------------------------- */
-  /* Notification Status                                                        */
-  /* -------------------------------------------------------------------------- */
-
-  const checkNotificationPermission =
-    useCallback(async () => {
-      const { status } =
-        await Notifications.getPermissionsAsync();
-
-      if (status === 'granted') {
-        setNotificationStatus('active');
-        return;
-      }
-
-      if (status === 'denied') {
-        setNotificationStatus('disabled');
-        return;
-      }
-
-      setNotificationStatus('not-set');
-    }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      checkNotificationPermission();
-    }, [checkNotificationPermission])
-  );
-
-  /* -------------------------------------------------------------------------- */
-  /* Reset All Data                                                             */
-  /* -------------------------------------------------------------------------- */
-
-  const handleResetAllData = () => {
+  const handleResetData = () => {
     Alert.alert(
       'Reset All Data',
-      'This will permanently delete all habits and your profile. This action cannot be undone.',
+      'Are you sure you want to delete all your habits and profile data? This action cannot be undone.',
       [
         {
           text: 'Cancel',
@@ -89,674 +43,553 @@ export default function SettingsScreen() {
         {
           text: 'Reset',
           style: 'destructive',
-          onPress: async () => {
-            try {
-              /*
-               * Cancel semua scheduled notifications
-               * sebelum data habit dihapus.
-               */
-              const notificationIds =
-                habits.flatMap(
-                  (habit) =>
-                    habit.notificationIds ?? []
-                );
-
-              if (notificationIds.length > 0) {
-                await cancelHabitReminder(
-                  notificationIds
-                );
-              }
-
-              resetAllData();
-
-              router.replace('/welcome');
-            } catch (error) {
-              console.error(
-                'Failed to reset all data:',
-                error
-              );
-
-              Alert.alert(
-                'Error',
-                'Failed to reset all data.'
-              );
-            }
+          onPress: () => {
+            resetAllData();
           },
         },
       ]
     );
   };
 
-  /* -------------------------------------------------------------------------- */
-  /* Helpers                                                                    */
-  /* -------------------------------------------------------------------------- */
-
-  const notificationLabel =
-    notificationStatus === 'active'
-      ? 'Active'
-      : notificationStatus === 'disabled'
-        ? 'Disabled'
-        : 'Not Set';
-
-  const notificationDescription =
-    notificationStatus === 'active'
-      ? 'Notifications are enabled'
-      : notificationStatus === 'disabled'
-        ? 'Notifications are disabled'
-        : 'Notification permission has not been set';
-
-  /* -------------------------------------------------------------------------- */
-  /* Render                                                                     */
-  /* -------------------------------------------------------------------------- */
-
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+        },
+      ]}
+    >
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
             Settings
           </Text>
 
-          <Text style={styles.subtitle}>
-            Customize your HabitTracker experience.
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color: colors.textSecondary,
+              },
+            ]}
+          >
+            Customize your Habit Tracker
           </Text>
         </View>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* Appearance                                                         */}
-        {/* ------------------------------------------------------------------ */}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Appearance
+        {/* Profile */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
+            Profile
           </Text>
 
-          <Text style={styles.sectionDescription}>
-            Choose how HabitTracker looks on your
-            device.
-          </Text>
-
-          <View style={styles.themeOptions}>
-            {/* System */}
-            <Pressable
-              accessibilityRole="radio"
-              accessibilityState={{
-                selected:
-                  themeMode === 'system',
-              }}
-              onPress={() =>
-                setThemeMode('system')
-              }
-              style={({ pressed }) => [
-                styles.themeOption,
-                themeMode === 'system' &&
-                  styles.themeOptionSelected,
-                pressed &&
-                  styles.themeOptionPressed,
-              ]}
-            >
-              <View style={styles.themeOptionIcon}>
-                <Text style={styles.themeIconText}>
-                  📱
-                </Text>
-              </View>
-
-              <View
-                style={styles.themeOptionContent}
-              >
-                <Text
-                  style={[
-                    styles.themeOptionTitle,
-                    themeMode === 'system' &&
-                      styles.themeOptionTitleSelected,
-                  ]}
-                >
-                  System
-                </Text>
-
-                <Text
-                  style={styles.themeOptionDescription}
-                >
-                  Follow your device theme
-                </Text>
-              </View>
-
-              {themeMode === 'system' && (
-                <View style={styles.checkCircle}>
-                  <Text style={styles.checkText}>
-                    ✓
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-
-            {/* Light */}
-            <Pressable
-              accessibilityRole="radio"
-              accessibilityState={{
-                selected:
-                  themeMode === 'light',
-              }}
-              onPress={() =>
-                setThemeMode('light')
-              }
-              style={({ pressed }) => [
-                styles.themeOption,
-                themeMode === 'light' &&
-                  styles.themeOptionSelected,
-                pressed &&
-                  styles.themeOptionPressed,
-              ]}
-            >
-              <View style={styles.themeOptionIcon}>
-                <Text style={styles.themeIconText}>
-                  ☀️
-                </Text>
-              </View>
-
-              <View
-                style={styles.themeOptionContent}
-              >
-                <Text
-                  style={[
-                    styles.themeOptionTitle,
-                    themeMode === 'light' &&
-                      styles.themeOptionTitleSelected,
-                  ]}
-                >
-                  Light
-                </Text>
-
-                <Text
-                  style={styles.themeOptionDescription}
-                >
-                  Always use light mode
-                </Text>
-              </View>
-
-              {themeMode === 'light' && (
-                <View style={styles.checkCircle}>
-                  <Text style={styles.checkText}>
-                    ✓
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-
-            {/* Dark */}
-            <Pressable
-              accessibilityRole="radio"
-              accessibilityState={{
-                selected:
-                  themeMode === 'dark',
-              }}
-              onPress={() =>
-                setThemeMode('dark')
-              }
-              style={({ pressed }) => [
-                styles.themeOption,
-                themeMode === 'dark' &&
-                  styles.themeOptionSelected,
-                pressed &&
-                  styles.themeOptionPressed,
-              ]}
-            >
-              <View style={styles.themeOptionIcon}>
-                <Text style={styles.themeIconText}>
-                  🌙
-                </Text>
-              </View>
-
-              <View
-                style={styles.themeOptionContent}
-              >
-                <Text
-                  style={[
-                    styles.themeOptionTitle,
-                    themeMode === 'dark' &&
-                      styles.themeOptionTitleSelected,
-                  ]}
-                >
-                  Dark
-                </Text>
-
-                <Text
-                  style={styles.themeOptionDescription}
-                >
-                  Always use dark mode
-                </Text>
-              </View>
-
-              {themeMode === 'dark' && (
-                <View style={styles.checkCircle}>
-                  <Text style={styles.checkText}>
-                    ✓
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-          </View>
-        </View>
-
-        {/* ------------------------------------------------------------------ */}
-        {/* Notifications                                                      */}
-        {/* ------------------------------------------------------------------ */}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Notifications
-          </Text>
-
-          <View style={styles.settingCard}>
-            <View style={styles.settingIcon}>
-              <Text style={styles.settingIconText}>
-                🔔
-              </Text>
-            </View>
-
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>
-                Habit Reminders
-              </Text>
-
-              <Text style={styles.settingDescription}>
-                {notificationDescription}
-              </Text>
-            </View>
-
+          <View style={styles.profileRow}>
             <View
               style={[
-                styles.statusBadge,
-                notificationStatus === 'active' &&
-                  styles.statusBadgeActive,
-                notificationStatus === 'disabled' &&
-                  styles.statusBadgeDisabled,
-                notificationStatus === 'not-set' &&
-                  styles.statusBadgeNotSet,
+                styles.avatar,
+                {
+                  backgroundColor: colors.primarySoft,
+                },
               ]}
             >
               <Text
                 style={[
-                  styles.statusText,
-                  notificationStatus === 'active' &&
-                    styles.statusTextActive,
-                  notificationStatus === 'disabled' &&
-                    styles.statusTextDisabled,
-                  notificationStatus === 'not-set' &&
-                    styles.statusTextNotSet,
+                  styles.avatarText,
+                  {
+                    color: colors.primary,
+                  },
                 ]}
               >
-                {notificationLabel}
+                {username?.charAt(0).toUpperCase() || '?'}
+              </Text>
+            </View>
+
+            <View style={styles.profileInfo}>
+              <Text
+                style={[
+                  styles.profileName,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                {username || 'User'}
+              </Text>
+
+              <Text
+                style={[
+                  styles.profileDescription,
+                  {
+                    color: colors.textSecondary,
+                  },
+                ]}
+              >
+                Habit Tracker user
               </Text>
             </View>
           </View>
         </View>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* Profile                                                            */}
-        {/* ------------------------------------------------------------------ */}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Profile
-          </Text>
-
-          <Pressable
-            onPress={() =>
-              router.push('/profile')
-            }
-            style={({ pressed }) => [
-              styles.settingCard,
-              pressed &&
-                styles.settingCardPressed,
+        {/* Appearance */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text,
+              },
             ]}
           >
-            <View style={styles.settingIcon}>
-              <Text style={styles.settingIconText}>
-                👤
+            Appearance
+          </Text>
+
+          <Text
+            style={[
+              styles.sectionDescription,
+              {
+                color: colors.textSecondary,
+              },
+            ]}
+          >
+            Choose how the app looks.
+          </Text>
+
+          <View
+            style={[
+              styles.themeOptions,
+              {
+                backgroundColor: colors.input,
+              },
+            ]}
+          >
+            <ThemeOption
+              label="System"
+              value="system"
+              selected={themeMode === 'system'}
+              onPress={() => handleThemeChange('system')}
+              colors={colors}
+            />
+
+            <ThemeOption
+              label="Light"
+              value="light"
+              selected={themeMode === 'light'}
+              onPress={() => handleThemeChange('light')}
+              colors={colors}
+            />
+
+            <ThemeOption
+              label="Dark"
+              value="dark"
+              selected={themeMode === 'dark'}
+              onPress={() => handleThemeChange('dark')}
+              colors={colors}
+            />
+          </View>
+        </View>
+
+        {/* Notifications */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
+            Notifications
+          </Text>
+
+          <View style={styles.settingRow}>
+            <View style={styles.settingInfo}>
+              <Text
+                style={[
+                  styles.settingTitle,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                Reminder Notifications
+              </Text>
+
+              <Text
+                style={[
+                  styles.settingDescription,
+                  {
+                    color: colors.textSecondary,
+                  },
+                ]}
+              >
+                Receive reminders for your habits.
               </Text>
             </View>
 
-            <View style={styles.settingContent}>
-              <Text style={styles.settingTitle}>
-                Profile
-              </Text>
-
-              <Text style={styles.settingDescription}>
-                Manage your profile information
-              </Text>
-            </View>
-
-            <Text style={styles.chevron}>
-              ›
-            </Text>
-          </Pressable>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              trackColor={{
+                false: colors.border,
+                true: colors.primary,
+              }}
+              thumbColor={
+                isDark ? colors.surface : '#FFFFFF'
+              }
+            />
+          </View>
         </View>
 
-        {/* ------------------------------------------------------------------ */}
-        {/* Data                                                               */}
-        {/* ------------------------------------------------------------------ */}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Data
-          </Text>
-
-          <Pressable
-            onPress={handleResetAllData}
-            style={({ pressed }) => [
-              styles.resetButton,
-              pressed &&
-                styles.resetButtonPressed,
+        {/* App Information */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text,
+              },
             ]}
           >
-            <Text style={styles.resetButtonText}>
-              Reset All Data
+            About
+          </Text>
+
+          <View style={styles.infoRow}>
+            <Text
+              style={[
+                styles.infoLabel,
+                {
+                  color: colors.textSecondary,
+                },
+              ]}
+            >
+              App
             </Text>
-          </Pressable>
 
-          <Text style={styles.resetDescription}>
-            Delete all habits, completion history,
-            reminders, and profile information.
-          </Text>
+            <Text
+              style={[
+                styles.infoValue,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              Habit Tracker
+            </Text>
+          </View>
+
+          <View style={styles.infoRow}>
+            <Text
+              style={[
+                styles.infoLabel,
+                {
+                  color: colors.textSecondary,
+                },
+              ]}
+            >
+              Version
+            </Text>
+
+            <Text
+              style={[
+                styles.infoValue,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              1.0.0
+            </Text>
+          </View>
         </View>
 
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerTitle}>
-            HabitTracker
+        {/* Reset */}
+        <Pressable
+          onPress={handleResetData}
+          style={({ pressed }) => [
+            styles.resetButton,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.danger,
+              opacity: pressed ? 0.7 : 1,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.resetButtonText,
+              {
+                color: colors.danger,
+              },
+            ]}
+          >
+            Reset All Data
           </Text>
+        </Pressable>
 
-          <Text style={styles.footerText}>
-            Build better habits, one day at a time.
-          </Text>
-
-          <Text style={styles.version}>
-            Version 1.0.0
-          </Text>
-        </View>
+        <Text
+          style={[
+            styles.footer,
+            {
+              color: colors.textMuted,
+            },
+          ]}
+        >
+          Habit Tracker • Stay consistent, one day at a time.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/* ========================================================================== */
-/* Styles                                                                     */
-/* ========================================================================== */
+type ThemeOptionProps = {
+  label: string;
+  value: ThemeMode;
+  selected: boolean;
+  onPress: () => void;
+  colors: ReturnType<typeof useAppTheme>['colors'];
+};
+
+function ThemeOption({
+  label,
+  selected,
+  onPress,
+  colors,
+}: ThemeOptionProps) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.themeOption,
+        {
+          backgroundColor: selected
+            ? colors.card
+            : 'transparent',
+          borderColor: selected
+            ? colors.border
+            : 'transparent',
+          opacity: pressed ? 0.7 : 1,
+        },
+      ]}
+    >
+      <Text
+        style={[
+          styles.themeOptionText,
+          {
+            color: selected
+              ? colors.text
+              : colors.textSecondary,
+          },
+        ]}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
 
   content: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 20,
     paddingBottom: 40,
   },
 
-  /* Header */
-
   header: {
-    marginBottom: 28,
+    marginBottom: 24,
   },
 
   title: {
     fontSize: 30,
-    fontWeight: '800',
-    color: '#0F172A',
+    fontWeight: '700',
   },
 
   subtitle: {
     marginTop: 6,
     fontSize: 14,
-    lineHeight: 21,
-    color: '#64748B',
   },
 
-  /* Section */
-
-  section: {
-    marginBottom: 24,
+  card: {
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
   },
 
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 12,
+    marginBottom: 6,
   },
 
   sectionDescription: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: '#64748B',
-    marginTop: -4,
-    marginBottom: 16,
+    fontSize: 14,
+    marginBottom: 14,
   },
 
-  /* Appearance */
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+
+  avatar: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  avatarText: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+
+  profileInfo: {
+    marginLeft: 14,
+  },
+
+  profileName: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+
+  profileDescription: {
+    marginTop: 4,
+    fontSize: 13,
+  },
 
   themeOptions: {
-    gap: 10,
+    flexDirection: 'row',
+    borderRadius: 12,
+    padding: 4,
   },
 
   themeOption: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 42,
+    borderWidth: 1,
+    borderRadius: 9,
+  },
+
+  themeOptionText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
+    justifyContent: 'space-between',
+    marginTop: 12,
   },
 
-  themeOptionSelected: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
-  },
-
-  themeOptionPressed: {
-    opacity: 0.75,
-  },
-
-  themeOptionIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
-    marginRight: 12,
-  },
-
-  themeIconText: {
-    fontSize: 20,
-  },
-
-  themeOptionContent: {
+  settingInfo: {
     flex: 1,
-  },
-
-  themeOptionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-
-  themeOptionTitleSelected: {
-    color: '#2563EB',
-  },
-
-  themeOptionDescription: {
-    fontSize: 12,
-    color: '#64748B',
-    marginTop: 3,
-  },
-
-  checkCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  checkText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-
-  /* Settings Card */
-
-  settingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFFFFF',
-  },
-
-  settingCardPressed: {
-    opacity: 0.75,
-  },
-
-  settingIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
-    marginRight: 12,
-  },
-
-  settingIconText: {
-    fontSize: 20,
-  },
-
-  settingContent: {
-    flex: 1,
+    paddingRight: 16,
   },
 
   settingTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#0F172A',
+    fontWeight: '600',
   },
 
   settingDescription: {
+    fontSize: 13,
     marginTop: 4,
-    fontSize: 12,
     lineHeight: 18,
-    color: '#64748B',
   },
 
-  chevron: {
-    fontSize: 28,
-    color: '#94A3B8',
-    marginLeft: 8,
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
 
-  /* Notification Status */
-
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginLeft: 8,
+  infoLabel: {
+    fontSize: 14,
   },
 
-  statusBadgeActive: {
-    backgroundColor: '#DCFCE7',
+  infoValue: {
+    fontSize: 14,
+    fontWeight: '600',
   },
-
-  statusBadgeDisabled: {
-    backgroundColor: '#FEE2E2',
-  },
-
-  statusBadgeNotSet: {
-    backgroundColor: '#F1F5F9',
-  },
-
-  statusText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-
-  statusTextActive: {
-    color: '#15803D',
-  },
-
-  statusTextDisabled: {
-    color: '#B91C1C',
-  },
-
-  statusTextNotSet: {
-    color: '#64748B',
-  },
-
-  /* Reset */
 
   resetButton: {
-    minHeight: 52,
-    borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#FECACA',
-    backgroundColor: '#FEF2F2',
+    borderRadius: 14,
+    minHeight: 50,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  resetButtonPressed: {
-    opacity: 0.7,
+    marginTop: 4,
   },
 
   resetButtonText: {
-    color: '#DC2626',
     fontSize: 15,
     fontWeight: '700',
   },
 
-  resetDescription: {
-    marginTop: 8,
-    fontSize: 12,
-    lineHeight: 18,
-    color: '#94A3B8',
-  },
-
-  /* Footer */
-
   footer: {
-    alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 20,
-  },
-
-  footerTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-
-  footerText: {
-    marginTop: 4,
-    fontSize: 12,
-    color: '#94A3B8',
     textAlign: 'center',
-  },
-
-  version: {
-    marginTop: 8,
-    fontSize: 11,
-    color: '#CBD5E1',
+    fontSize: 12,
+    marginTop: 24,
   },
 });

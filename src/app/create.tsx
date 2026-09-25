@@ -19,6 +19,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useAppTheme } from '@/hooks/useAppTheme';
+
 import {
   HabitFrequency,
   useHabitStore,
@@ -63,6 +65,8 @@ const formatTime = (
 
 export default function CreateHabitScreen() {
   const router = useRouter();
+
+  const { colors, colorScheme } = useAppTheme();
 
   const { id } = useLocalSearchParams<{
     id?: string;
@@ -355,8 +359,32 @@ export default function CreateHabitScreen() {
     }
   };
 
+  const inputBackground = colors.input;
+
+  const selectedFrequencyBackground =
+    colorScheme === 'dark'
+      ? colors.primarySoft
+      : '#EFF6FF';
+
+  const reminderActiveBackground =
+    colorScheme === 'dark'
+      ? colors.primarySoft
+      : '#F8FBFF';
+
+  const pressedBackground =
+    colorScheme === 'dark'
+      ? colors.border
+      : colors.input;
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+        },
+      ]}
+    >
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={
@@ -380,18 +408,36 @@ export default function CreateHabitScreen() {
               onPress={() => router.back()}
               style={({ pressed }) => [
                 styles.backButton,
-                pressed &&
-                  styles.backButtonPressed,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+                pressed && {
+                  backgroundColor:
+                    pressedBackground,
+                },
               ]}
             >
               <Text
-                style={styles.backButtonText}
+                style={[
+                  styles.backButtonText,
+                  {
+                    color: colors.text,
+                  },
+                ]}
               >
                 ‹
               </Text>
             </Pressable>
 
-            <Text style={styles.title}>
+            <Text
+              style={[
+                styles.title,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
               {isEditMode
                 ? 'Edit Habit'
                 : 'Add Habit'}
@@ -408,7 +454,14 @@ export default function CreateHabitScreen() {
             {/* Habit Name */}
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
                 Habit Name
               </Text>
 
@@ -416,11 +469,22 @@ export default function CreateHabitScreen() {
                 value={name}
                 onChangeText={setName}
                 placeholder="e.g. Drink Water"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={
+                  colors.textMuted
+                }
                 style={[
                   styles.input,
-                  name.length > 0 &&
-                    styles.inputActive,
+                  {
+                    backgroundColor:
+                      inputBackground,
+                    borderColor:
+                      colors.border,
+                    color: colors.text,
+                  },
+                  name.length > 0 && {
+                    borderColor:
+                      colors.primary,
+                  },
                 ]}
                 autoCapitalize="words"
                 autoCorrect={false}
@@ -432,12 +496,24 @@ export default function CreateHabitScreen() {
 
             <View style={styles.inputGroup}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>
+                <Text
+                  style={[
+                    styles.label,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
                   Description
                 </Text>
 
                 <Text
-                  style={styles.optionalText}
+                  style={[
+                    styles.optionalText,
+                    {
+                      color: colors.textMuted,
+                    },
+                  ]}
                 >
                   Optional
                 </Text>
@@ -447,12 +523,23 @@ export default function CreateHabitScreen() {
                 value={description}
                 onChangeText={setDescription}
                 placeholder="e.g. 8 glasses"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={
+                  colors.textMuted
+                }
                 style={[
                   styles.input,
                   styles.textArea,
-                  description.length > 0 &&
-                    styles.inputActive,
+                  {
+                    backgroundColor:
+                      inputBackground,
+                    borderColor:
+                      colors.border,
+                    color: colors.text,
+                  },
+                  description.length > 0 && {
+                    borderColor:
+                      colors.primary,
+                  },
                 ]}
                 multiline
                 numberOfLines={4}
@@ -463,11 +550,25 @@ export default function CreateHabitScreen() {
             {/* Frequency */}
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>
+              <Text
+                style={[
+                  styles.label,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
                 Frequency
               </Text>
 
-              <Text style={styles.sectionHint}>
+              <Text
+                style={[
+                  styles.sectionHint,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
                 Choose when this habit should
                 be completed.
               </Text>
@@ -496,8 +597,18 @@ export default function CreateHabitScreen() {
                         }
                         style={({ pressed }) => [
                           styles.frequencyOption,
-                          isSelected &&
-                            styles.frequencyOptionSelected,
+                          {
+                            backgroundColor:
+                              colors.card,
+                            borderColor:
+                              colors.border,
+                          },
+                          isSelected && {
+                            borderColor:
+                              colors.primary,
+                            backgroundColor:
+                              selectedFrequencyBackground,
+                          },
                           pressed &&
                             styles.frequencyOptionPressed,
                         ]}
@@ -505,15 +616,25 @@ export default function CreateHabitScreen() {
                         <View
                           style={[
                             styles.radio,
-                            isSelected &&
-                              styles.radioSelected,
+                            {
+                              borderColor:
+                                colors.border,
+                            },
+                            isSelected && {
+                              borderColor:
+                                colors.primary,
+                            },
                           ]}
                         >
                           {isSelected && (
                             <View
-                              style={
-                                styles.radioInner
-                              }
+                              style={[
+                                styles.radioInner,
+                                {
+                                  backgroundColor:
+                                    colors.primary,
+                                },
+                              ]}
                             />
                           )}
                         </View>
@@ -526,17 +647,27 @@ export default function CreateHabitScreen() {
                           <Text
                             style={[
                               styles.frequencyLabel,
-                              isSelected &&
-                                styles.frequencyLabelSelected,
+                              {
+                                color:
+                                  colors.text,
+                              },
+                              isSelected && {
+                                color:
+                                  colors.primary,
+                              },
                             ]}
                           >
                             {option.label}
                           </Text>
 
                           <Text
-                            style={
-                              styles.frequencyDescription
-                            }
+                            style={[
+                              styles.frequencyDescription,
+                              {
+                                color:
+                                  colors.textSecondary,
+                              },
+                            ]}
                           >
                             {option.description}
                           </Text>
@@ -544,9 +675,13 @@ export default function CreateHabitScreen() {
 
                         {isSelected && (
                           <Text
-                            style={
-                              styles.selectedCheck
-                            }
+                            style={[
+                              styles.selectedCheck,
+                              {
+                                color:
+                                  colors.primary,
+                              },
+                            ]}
                           >
                             ✓
                           </Text>
@@ -564,8 +699,18 @@ export default function CreateHabitScreen() {
               <View
                 style={[
                   styles.reminderHeader,
-                  reminderEnabled &&
-                    styles.reminderHeaderActive,
+                  {
+                    backgroundColor:
+                      colors.card,
+                    borderColor:
+                      colors.border,
+                  },
+                  reminderEnabled && {
+                    borderColor:
+                      colors.primary,
+                    backgroundColor:
+                      reminderActiveBackground,
+                  },
                 ]}
               >
                 <View
@@ -574,7 +719,9 @@ export default function CreateHabitScreen() {
                   }
                 >
                   <View
-                    style={styles.reminderTitleRow}
+                    style={
+                      styles.reminderTitleRow
+                    }
                   >
                     <Text
                       style={styles.reminderIcon}
@@ -583,16 +730,25 @@ export default function CreateHabitScreen() {
                     </Text>
 
                     <Text
-                      style={styles.label}
+                      style={[
+                        styles.label,
+                        {
+                          color: colors.text,
+                        },
+                      ]}
                     >
                       Reminder
                     </Text>
                   </View>
 
                   <Text
-                    style={
-                      styles.reminderDescription
-                    }
+                    style={[
+                      styles.reminderDescription,
+                      {
+                        color:
+                          colors.textSecondary,
+                      },
+                    ]}
                   >
                     Get notified when it's time
                     to complete this habit.
@@ -613,13 +769,23 @@ export default function CreateHabitScreen() {
                   }
                   style={[
                     styles.switch,
-                    reminderEnabled &&
-                      styles.switchActive,
+                    {
+                      backgroundColor:
+                        colors.border,
+                    },
+                    reminderEnabled && {
+                      backgroundColor:
+                        colors.primary,
+                    },
                   ]}
                 >
                   <View
                     style={[
                       styles.switchThumb,
+                      {
+                        backgroundColor:
+                          '#FFFFFF',
+                      },
                       reminderEnabled &&
                         styles.switchThumbActive,
                     ]}
@@ -629,18 +795,35 @@ export default function CreateHabitScreen() {
 
               {reminderEnabled && (
                 <View
-                  style={styles.reminderOptions}
+                  style={[
+                    styles.reminderOptions,
+                    {
+                      backgroundColor:
+                        colors.card,
+                      borderColor:
+                        colors.border,
+                    },
+                  ]}
                 >
                   <Text
-                    style={
-                      styles.reminderTimeLabel
-                    }
+                    style={[
+                      styles.reminderTimeLabel,
+                      {
+                        color: colors.text,
+                      },
+                    ]}
                   >
                     Reminder Time
                   </Text>
 
                   <Text
-                    style={styles.sectionHint}
+                    style={[
+                      styles.sectionHint,
+                      {
+                        color:
+                          colors.textMuted,
+                      },
+                    ]}
                   >
                     Choose a time that works best
                     for you.
@@ -654,23 +837,38 @@ export default function CreateHabitScreen() {
                     }
                     style={({ pressed }) => [
                       styles.timePickerButton,
-                      pressed &&
-                        styles.timePickerButtonPressed,
+                      {
+                        borderColor:
+                          colors.border,
+                        backgroundColor:
+                          colors.input,
+                      },
+                      pressed && {
+                        opacity: 0.7,
+                      },
                     ]}
                   >
                     <View>
                       <Text
-                        style={
-                          styles.timePickerLabel
-                        }
+                        style={[
+                          styles.timePickerLabel,
+                          {
+                            color:
+                              colors.textSecondary,
+                          },
+                        ]}
                       >
                         Reminder time
                       </Text>
 
                       <Text
-                        style={
-                          styles.timePickerValue
-                        }
+                        style={[
+                          styles.timePickerValue,
+                          {
+                            color:
+                              colors.primary,
+                          },
+                        ]}
                       >
                         {formatTime(
                           reminderHour,
@@ -680,9 +878,13 @@ export default function CreateHabitScreen() {
                     </View>
 
                     <Text
-                      style={
-                        styles.timePickerChevron
-                      }
+                      style={[
+                        styles.timePickerChevron,
+                        {
+                          color:
+                            colors.textMuted,
+                        },
+                      ]}
                     >
                       ›
                     </Text>
@@ -690,21 +892,19 @@ export default function CreateHabitScreen() {
 
                   {showTimePicker && (
                     <DateTimePicker
-                      value={
-                        (() => {
-                          const date =
-                            new Date();
+                      value={(() => {
+                        const date =
+                          new Date();
 
-                          date.setHours(
-                            reminderHour,
-                            reminderMinute,
-                            0,
-                            0
-                          );
+                        date.setHours(
+                          reminderHour,
+                          reminderMinute,
+                          0,
+                          0
+                        );
 
-                          return date;
-                        })()
-                      }
+                        return date;
+                      })()}
                       mode="time"
                       is24Hour
                       display="default"
@@ -729,8 +929,14 @@ export default function CreateHabitScreen() {
             }}
             style={({ pressed }) => [
               styles.saveButton,
-              !isValid &&
-                styles.saveButtonDisabled,
+              {
+                backgroundColor:
+                  colors.primary,
+              },
+              !isValid && {
+                backgroundColor:
+                  colors.border,
+              },
               isSaving &&
                 styles.saveButtonSaving,
               pressed &&
@@ -773,7 +979,6 @@ export default function CreateHabitScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
 
   keyboardView: {
@@ -797,20 +1002,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     justifyContent: 'center',
     alignItems: 'center',
   },
 
-  backButtonPressed: {
-    backgroundColor: '#F1F5F9',
-  },
-
   backButtonText: {
     fontSize: 32,
-    color: '#0F172A',
     lineHeight: 36,
     marginTop: -4,
   },
@@ -818,7 +1016,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0F172A',
   },
 
   headerSpacer: {
@@ -842,28 +1039,19 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
   },
 
   optionalText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#94A3B8',
   },
 
   input: {
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#0F172A',
-  },
-
-  inputActive: {
-    borderColor: '#CBD5E1',
   },
 
   textArea: {
@@ -873,7 +1061,6 @@ const styles = StyleSheet.create({
   sectionHint: {
     fontSize: 12,
     lineHeight: 18,
-    color: '#94A3B8',
     marginTop: -2,
   },
 
@@ -885,16 +1072,9 @@ const styles = StyleSheet.create({
   frequencyOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     borderRadius: 16,
     padding: 16,
-  },
-
-  frequencyOptionSelected: {
-    borderColor: '#2563EB',
-    backgroundColor: '#EFF6FF',
   },
 
   frequencyOptionPressed: {
@@ -906,21 +1086,15 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#CBD5E1',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
-  },
-
-  radioSelected: {
-    borderColor: '#2563EB',
   },
 
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#2563EB',
   },
 
   frequencyContent: {
@@ -930,23 +1104,16 @@ const styles = StyleSheet.create({
   frequencyLabel: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#334155',
-  },
-
-  frequencyLabelSelected: {
-    color: '#2563EB',
   },
 
   frequencyDescription: {
     fontSize: 13,
-    color: '#64748B',
     marginTop: 4,
   },
 
   selectedCheck: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#2563EB',
     marginLeft: 8,
   },
 
@@ -954,16 +1121,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     borderRadius: 16,
     padding: 16,
-  },
-
-  reminderHeaderActive: {
-    borderColor: '#BFDBFE',
-    backgroundColor: '#F8FBFF',
   },
 
   reminderHeaderContent: {
@@ -983,7 +1143,6 @@ const styles = StyleSheet.create({
 
   reminderDescription: {
     fontSize: 13,
-    color: '#64748B',
     marginTop: 5,
     lineHeight: 18,
   },
@@ -992,20 +1151,14 @@ const styles = StyleSheet.create({
     width: 52,
     height: 30,
     borderRadius: 15,
-    backgroundColor: '#CBD5E1',
     justifyContent: 'center',
     paddingHorizontal: 3,
-  },
-
-  switchActive: {
-    backgroundColor: '#2563EB',
   },
 
   switchThumb: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
   },
 
   switchThumbActive: {
@@ -1013,9 +1166,7 @@ const styles = StyleSheet.create({
   },
 
   reminderOptions: {
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     borderRadius: 16,
     padding: 16,
     marginTop: 8,
@@ -1024,7 +1175,6 @@ const styles = StyleSheet.create({
   reminderTimeLabel: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#334155',
   },
 
   timePickerButton: {
@@ -1036,34 +1186,24 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-  },
-
-  timePickerButtonPressed: {
-    opacity: 0.7,
   },
 
   timePickerLabel: {
     fontSize: 12,
-    color: '#64748B',
     marginBottom: 4,
   },
 
   timePickerValue: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#2563EB',
   },
 
   timePickerChevron: {
     fontSize: 26,
-    color: '#94A3B8',
   },
 
   saveButton: {
     minHeight: 56,
-    backgroundColor: '#0F172A',
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1071,10 +1211,6 @@ const styles = StyleSheet.create({
     gap: 10,
     marginTop: 32,
     marginBottom: 20,
-  },
-
-  saveButtonDisabled: {
-    backgroundColor: '#CBD5E1',
   },
 
   saveButtonSaving: {

@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { useHabitStore } from '@/store/habit-store';
 
 import {
@@ -30,6 +31,9 @@ const DAY_LABELS = [
 ];
 
 export default function StatsScreen() {
+  const { colors, colorScheme } =
+    useAppTheme();
+
   const habits = useHabitStore(
     (state) => state.habits
   );
@@ -48,18 +52,15 @@ export default function StatsScreen() {
 
   /*
    * Current streak per habit.
-   *
-   * Kita ambil streak terbaik saat ini
-   * dari semua habit.
    */
   const currentStreak =
-  getOverallCurrentStreak(habits);
+    getOverallCurrentStreak(habits);
 
   /*
    * Best streak per habit.
    */
   const bestStreak =
-  getOverallBestStreak(habits);
+    getOverallBestStreak(habits);
 
   /*
    * Weekly activity.
@@ -196,8 +197,45 @@ export default function StatsScreen() {
         )
       ).length;
 
+  /*
+   * Dark mode specific colors.
+   */
+  const completionCardBackground =
+    colorScheme === 'dark'
+      ? '#1E293B'
+      : '#0F172A';
+
+  const completionProgressBackground =
+    colorScheme === 'dark'
+      ? '#334155'
+      : '#334155';
+
+  const statCardBackground =
+    colors.card;
+
+  const calendarCompletedBackground =
+    colorScheme === 'dark'
+      ? '#14532D'
+      : '#DCFCE7';
+
+  const barActiveBackground =
+    colorScheme === 'dark'
+      ? '#1E40AF'
+      : '#BFDBFE';
+
+  const emptyBackground =
+    colors.card;
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            colors.background,
+        },
+      ]}
+    >
       <ScrollView
         contentContainerStyle={
           styles.content
@@ -207,18 +245,41 @@ export default function StatsScreen() {
         {/* Header */}
 
         <View style={styles.header}>
-          <Text style={styles.title}>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
             Statistics
           </Text>
 
-          <Text style={styles.subtitle}>
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
             Track your progress and consistency
           </Text>
         </View>
 
         {/* Completion Card */}
 
-        <View style={styles.completionCard}>
+        <View
+          style={[
+            styles.completionCard,
+            {
+              backgroundColor:
+                completionCardBackground,
+            },
+          ]}
+        >
           <View
             style={
               styles.completionHeader
@@ -226,17 +287,23 @@ export default function StatsScreen() {
           >
             <View>
               <Text
-                style={
-                  styles.completionLabel
-                }
+                style={[
+                  styles.completionLabel,
+                  {
+                    color: '#FFFFFF',
+                  },
+                ]}
               >
                 Weekly Completion
               </Text>
 
               <Text
-                style={
-                  styles.completionDescription
-                }
+                style={[
+                  styles.completionDescription,
+                  {
+                    color: '#CBD5E1',
+                  },
+                ]}
               >
                 Your progress over the last
                 7 days
@@ -244,72 +311,161 @@ export default function StatsScreen() {
             </View>
 
             <Text
-              style={
-                styles.completionPercentage
-              }
+              style={[
+                styles.completionPercentage,
+                {
+                  color: '#FFFFFF',
+                },
+              ]}
             >
               {completionRate}%
             </Text>
           </View>
 
           <View
-            style={
-              styles.progressBackground
-            }
+            style={[
+              styles.progressBackground,
+              {
+                backgroundColor:
+                  completionProgressBackground,
+              },
+            ]}
           >
             <View
               style={[
                 styles.progressFill,
                 {
                   width: `${completionRate}%`,
+                  backgroundColor:
+                    colors.primary,
                 },
               ]}
             />
           </View>
 
-          <Text style={styles.completionCount}>
+          <Text
+            style={[
+              styles.completionCount,
+              {
+                color: '#CBD5E1',
+              },
+            ]}
+          >
             {weeklyCompleted} of{' '}
-            {weeklyScheduled} habit check-ins completed
+            {weeklyScheduled} habit check-ins
+            completed
           </Text>
         </View>
 
         {/* Streak Cards */}
 
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statEmoji}>
+        <View
+          style={styles.statsRow}
+        >
+          <View
+            style={[
+              styles.statCard,
+              {
+                backgroundColor:
+                  statCardBackground,
+                borderColor:
+                  colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={styles.statEmoji}
+            >
               🔥
             </Text>
 
-            <Text style={styles.statLabel}>
+            <Text
+              style={[
+                styles.statLabel,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
+            >
               Current Streak
             </Text>
 
-            <Text style={styles.statValue}>
+            <Text
+              style={[
+                styles.statValue,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
               {currentStreak}
             </Text>
 
-            <Text style={styles.statUnit}>
+            <Text
+              style={[
+                styles.statUnit,
+                {
+                  color:
+                    colors.textMuted,
+                },
+              ]}
+            >
               {currentStreak === 1
                 ? 'day'
                 : 'days'}
             </Text>
           </View>
 
-          <View style={styles.statCard}>
-            <Text style={styles.statEmoji}>
+          <View
+            style={[
+              styles.statCard,
+              {
+                backgroundColor:
+                  statCardBackground,
+                borderColor:
+                  colors.border,
+              },
+            ]}
+          >
+            <Text
+              style={styles.statEmoji}
+            >
               🏆
             </Text>
 
-            <Text style={styles.statLabel}>
+            <Text
+              style={[
+                styles.statLabel,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
+            >
               Best Streak
             </Text>
 
-            <Text style={styles.statValue}>
+            <Text
+              style={[
+                styles.statValue,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
               {bestStreak}
             </Text>
 
-            <Text style={styles.statUnit}>
+            <Text
+              style={[
+                styles.statUnit,
+                {
+                  color:
+                    colors.textMuted,
+                },
+              ]}
+            >
               {bestStreak === 1
                 ? 'day'
                 : 'days'}
@@ -319,20 +475,50 @@ export default function StatsScreen() {
 
         {/* Total Completed */}
 
-        <View style={styles.totalCard}>
+        <View
+          style={[
+            styles.totalCard,
+            {
+              backgroundColor:
+                colors.card,
+              borderColor:
+                colors.border,
+            },
+          ]}
+        >
           <View>
-            <Text style={styles.totalLabel}>
+            <Text
+              style={[
+                styles.totalLabel,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
               Total Completed
             </Text>
 
             <Text
-              style={styles.totalDescription}
+              style={[
+                styles.totalDescription,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
             >
               All completed habits
             </Text>
           </View>
 
-          <Text style={styles.totalValue}>
+          <Text
+            style={[
+              styles.totalValue,
+              {
+                color: colors.primary,
+              },
+            ]}
+          >
             {totalCompleted}
           </Text>
         </View>
@@ -340,30 +526,56 @@ export default function StatsScreen() {
         {/* Weekly Activity */}
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+          <View
+            style={styles.sectionHeader}
+          >
             <View>
-              <Text style={styles.sectionTitle}>
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
                 Weekly Activity
               </Text>
 
               <Text
-                style={
-                  styles.sectionSubtitle
-                }
+                style={[
+                  styles.sectionSubtitle,
+                  {
+                    color:
+                      colors.textSecondary,
+                  },
+                ]}
               >
                 Last 7 days
               </Text>
             </View>
 
             <Text
-              style={styles.weeklyTotal}
+              style={[
+                styles.weeklyTotal,
+                {
+                  color: colors.primary,
+                },
+              ]}
             >
               {weeklyCompleted} completed
             </Text>
           </View>
 
           <View
-            style={styles.activityCard}
+            style={[
+              styles.activityCard,
+              {
+                backgroundColor:
+                  colors.card,
+                borderColor:
+                  colors.border,
+              },
+            ]}
           >
             {weeklyActivity.map(
               (day) => {
@@ -410,13 +622,22 @@ export default function StatsScreen() {
                         style={[
                           styles.bar,
                           {
-                            height: barHeight,
+                            height:
+                              barHeight,
+                            backgroundColor:
+                              colors.border,
                           },
+
                           day.completedCount >
-                            0 &&
-                            styles.barActive,
-                          isToday &&
-                            styles.barToday,
+                            0 && {
+                            backgroundColor:
+                              barActiveBackground,
+                          },
+
+                          isToday && {
+                            backgroundColor:
+                              colors.primary,
+                          },
                         ]}
                       />
                     </View>
@@ -424,8 +645,15 @@ export default function StatsScreen() {
                     <Text
                       style={[
                         styles.dayLabel,
-                        isToday &&
-                          styles.dayLabelToday,
+                        {
+                          color:
+                            colors.textSecondary,
+                        },
+
+                        isToday && {
+                          color:
+                            colors.primary,
+                        },
                       ]}
                     >
                       {dayName}
@@ -434,8 +662,16 @@ export default function StatsScreen() {
                     <Text
                       style={[
                         styles.dayNumber,
-                        isToday &&
-                          styles.dayNumberToday,
+                        {
+                          color:
+                            colors.textMuted,
+                        },
+
+                        isToday && {
+                          color:
+                            colors.primary,
+                          fontWeight: '700',
+                        },
                       ]}
                     >
                       {dayNumber}
@@ -450,16 +686,29 @@ export default function StatsScreen() {
         {/* Monthly Calendar */}
 
         <View style={styles.section}>
-          <View style={styles.sectionHeader}>
+          <View
+            style={styles.sectionHeader}
+          >
             <View>
-              <Text style={styles.sectionTitle}>
+              <Text
+                style={[
+                  styles.sectionTitle,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
                 Monthly Activity
               </Text>
 
               <Text
-                style={
-                  styles.sectionSubtitle
-                }
+                style={[
+                  styles.sectionSubtitle,
+                  {
+                    color:
+                      colors.textSecondary,
+                  },
+                ]}
               >
                 {monthName}
               </Text>
@@ -467,20 +716,34 @@ export default function StatsScreen() {
           </View>
 
           <View
-            style={styles.calendarCard}
+            style={[
+              styles.calendarCard,
+              {
+                backgroundColor:
+                  colors.card,
+                borderColor:
+                  colors.border,
+              },
+            ]}
           >
             {/* Day headers */}
 
             <View
-              style={styles.calendarRow}
+              style={
+                styles.calendarRow
+              }
             >
               {DAY_LABELS.map(
                 (day) => (
                   <Text
                     key={day}
-                    style={
-                      styles.calendarDayHeader
-                    }
+                    style={[
+                      styles.calendarDayHeader,
+                      {
+                        color:
+                          colors.textMuted,
+                      },
+                    ]}
                   >
                     {day.charAt(0)}
                   </Text>
@@ -491,7 +754,9 @@ export default function StatsScreen() {
             {/* Calendar */}
 
             <View
-              style={styles.calendarGrid}
+              style={
+                styles.calendarGrid
+              }
             >
               {calendarDays.map(
                 (date, index) => {
@@ -524,19 +789,39 @@ export default function StatsScreen() {
                       <View
                         style={[
                           styles.calendarCircle,
-                          completed > 0 &&
-                            styles.calendarCircleCompleted,
-                          isToday &&
-                            styles.calendarCircleToday,
+
+                          completed > 0 && {
+                            backgroundColor:
+                              calendarCompletedBackground,
+                          },
+
+                          isToday && {
+                            borderWidth: 2,
+                            borderColor:
+                              colors.primary,
+                          },
                         ]}
                       >
                         <Text
                           style={[
                             styles.calendarNumber,
-                            completed > 0 &&
-                              styles.calendarNumberCompleted,
-                            isToday &&
-                              styles.calendarNumberToday,
+                            {
+                              color:
+                                colors.textSecondary,
+                            },
+
+                            completed >
+                              0 && {
+                              color:
+                                colors.success,
+                              fontWeight:
+                                '700',
+                            },
+
+                            isToday && {
+                              color:
+                                colors.primary,
+                            },
                           ]}
                         >
                           {new Date(
@@ -547,9 +832,13 @@ export default function StatsScreen() {
 
                       {completed > 0 && (
                         <View
-                          style={
-                            styles.activityDot
-                          }
+                          style={[
+                            styles.activityDot,
+                            {
+                              backgroundColor:
+                                colors.success,
+                            },
+                          ]}
                         />
                       )}
                     </View>
@@ -564,20 +853,41 @@ export default function StatsScreen() {
 
         {habits.length === 0 && (
           <View
-            style={styles.emptyCard}
+            style={[
+              styles.emptyCard,
+              {
+                backgroundColor:
+                  emptyBackground,
+                borderColor:
+                  colors.border,
+              },
+            ]}
           >
-            <Text style={styles.emptyEmoji}>
+            <Text
+              style={styles.emptyEmoji}
+            >
               📊
             </Text>
 
-            <Text style={styles.emptyTitle}>
+            <Text
+              style={[
+                styles.emptyTitle,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
               No statistics yet
             </Text>
 
             <Text
-              style={
-                styles.emptyDescription
-              }
+              style={[
+                styles.emptyDescription,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
             >
               Start completing your habits
               to see your progress here.
@@ -592,7 +902,6 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
 
   content: {
@@ -607,19 +916,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 30,
     fontWeight: '800',
-    color: '#0F172A',
   },
 
   subtitle: {
     marginTop: 6,
     fontSize: 14,
-    color: '#64748B',
   },
 
   /* Completion */
 
   completionCard: {
-    backgroundColor: '#0F172A',
     borderRadius: 20,
     padding: 20,
     marginBottom: 16,
@@ -627,32 +933,29 @@ const styles = StyleSheet.create({
 
   completionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
     alignItems: 'center',
   },
 
   completionLabel: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
 
   completionDescription: {
     marginTop: 5,
     fontSize: 13,
-    color: '#CBD5E1',
   },
 
   completionPercentage: {
     fontSize: 30,
     fontWeight: '800',
-    color: '#FFFFFF',
   },
 
   progressBackground: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#334155',
     marginTop: 20,
     overflow: 'hidden',
   },
@@ -660,13 +963,11 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 4,
-    backgroundColor: '#60A5FA',
   },
 
   completionCount: {
     marginTop: 10,
     fontSize: 12,
-    color: '#CBD5E1',
   },
 
   /* Stats */
@@ -679,11 +980,9 @@ const styles = StyleSheet.create({
 
   statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
 
   statEmoji: {
@@ -694,19 +993,16 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748B',
   },
 
   statValue: {
     marginTop: 5,
     fontSize: 30,
     fontWeight: '800',
-    color: '#0F172A',
   },
 
   statUnit: {
     fontSize: 12,
-    color: '#94A3B8',
   },
 
   /* Total */
@@ -714,31 +1010,27 @@ const styles = StyleSheet.create({
   totalCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
+    justifyContent:
+      'space-between',
     borderRadius: 18,
     padding: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     marginBottom: 28,
   },
 
   totalLabel: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#0F172A',
   },
 
   totalDescription: {
     marginTop: 4,
     fontSize: 13,
-    color: '#64748B',
   },
 
   totalValue: {
     fontSize: 32,
     fontWeight: '800',
-    color: '#2563EB',
   },
 
   /* Section */
@@ -749,7 +1041,8 @@ const styles = StyleSheet.create({
 
   sectionHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent:
+      'space-between',
     alignItems: 'flex-end',
     marginBottom: 12,
   },
@@ -757,19 +1050,16 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 19,
     fontWeight: '800',
-    color: '#0F172A',
   },
 
   sectionSubtitle: {
     marginTop: 4,
     fontSize: 13,
-    color: '#64748B',
   },
 
   weeklyTotal: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#2563EB',
   },
 
   /* Weekly Activity */
@@ -778,11 +1068,10 @@ const styles = StyleSheet.create({
     height: 190,
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
+    justifyContent:
+      'space-around',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     paddingHorizontal: 10,
     paddingTop: 20,
     paddingBottom: 18,
@@ -797,52 +1086,31 @@ const styles = StyleSheet.create({
 
   barContainer: {
     height: 105,
-    justifyContent: 'flex-end',
+    justifyContent:
+      'flex-end',
   },
 
   bar: {
     width: 18,
     borderRadius: 9,
-    backgroundColor: '#E2E8F0',
-  },
-
-  barActive: {
-    backgroundColor: '#BFDBFE',
-  },
-
-  barToday: {
-    backgroundColor: '#2563EB',
   },
 
   dayLabel: {
     marginTop: 10,
     fontSize: 11,
-    color: '#64748B',
     fontWeight: '600',
-  },
-
-  dayLabelToday: {
-    color: '#2563EB',
   },
 
   dayNumber: {
     marginTop: 3,
     fontSize: 11,
-    color: '#94A3B8',
-  },
-
-  dayNumberToday: {
-    color: '#2563EB',
-    fontWeight: '700',
   },
 
   /* Calendar */
 
   calendarCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     padding: 16,
   },
 
@@ -856,7 +1124,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     fontWeight: '700',
-    color: '#94A3B8',
   },
 
   calendarGrid: {
@@ -879,28 +1146,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  calendarCircleCompleted: {
-    backgroundColor: '#DCFCE7',
-  },
-
-  calendarCircleToday: {
-    borderWidth: 2,
-    borderColor: '#2563EB',
-  },
-
   calendarNumber: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#475569',
-  },
-
-  calendarNumberCompleted: {
-    color: '#16A34A',
-    fontWeight: '700',
-  },
-
-  calendarNumberToday: {
-    color: '#2563EB',
   },
 
   activityDot: {
@@ -909,18 +1157,15 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#16A34A',
   },
 
   /* Empty */
 
   emptyCard: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     padding: 30,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
 
   emptyEmoji: {
@@ -931,7 +1176,6 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
   },
 
   emptyDescription: {
@@ -939,6 +1183,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     textAlign: 'center',
-    color: '#64748B',
   },
 });

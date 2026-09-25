@@ -2,9 +2,16 @@ import {
   useLocalSearchParams,
   useRouter,
 } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useAppTheme } from '@/hooks/useAppTheme';
 import { useHabitStore } from '@/store/habit-store';
 
 import {
@@ -33,6 +40,8 @@ const FREQUENCY_LABELS = {
 export default function HabitDetailScreen() {
   const router = useRouter();
 
+  const { colors, colorScheme } = useAppTheme();
+
   const { id } = useLocalSearchParams<{
     id: string;
   }>();
@@ -43,30 +52,77 @@ export default function HabitDetailScreen() {
     )
   );
 
+  const isDark = colorScheme === 'dark';
+
+  const completedCircleBackground = isDark
+    ? '#14532D'
+    : '#DCFCE7';
+
+  const disabledCircleBackground = isDark
+    ? '#334155'
+    : '#E2E8F0';
+
+  const todayCircleBackground = isDark
+    ? '#1E3A5F'
+    : '#EFF6FF';
+
+  const settingIconBackground = isDark
+    ? '#334155'
+    : '#F1F5F9';
+
   if (!habit) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={[
+          styles.container,
+          {
+            backgroundColor:
+              colors.background,
+          },
+        ]}
+      >
         <View style={styles.notFound}>
           <Text style={styles.notFoundEmoji}>
             🔍
           </Text>
 
-          <Text style={styles.notFoundTitle}>
+          <Text
+            style={[
+              styles.notFoundTitle,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
             Habit Not Found
           </Text>
 
           <Text
-            style={styles.notFoundDescription}
+            style={[
+              styles.notFoundDescription,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
           >
             This habit may have been deleted.
           </Text>
 
           <Pressable
-            style={styles.backHomeButton}
+            style={[
+              styles.backHomeButton,
+              {
+                backgroundColor:
+                  colors.primary,
+              },
+            ]}
             onPress={() => router.back()}
           >
             <Text
-              style={styles.backHomeButtonText}
+              style={
+                styles.backHomeButtonText
+              }
             >
               Go Back
             </Text>
@@ -93,6 +149,7 @@ export default function HabitDetailScreen() {
   /*
    * Weekly statistics.
    */
+
   const weeklyCompleted =
     lastSevenDays.filter((date) =>
       completedDates.includes(date)
@@ -121,7 +178,15 @@ export default function HabitDetailScreen() {
     ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            colors.background,
+        },
+      ]}
+    >
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -130,17 +195,37 @@ export default function HabitDetailScreen() {
 
         <View style={styles.header}>
           <Pressable
-            style={styles.backButton}
+            style={[
+              styles.backButton,
+              {
+                backgroundColor:
+                  colors.card,
+                borderColor:
+                  colors.border,
+              },
+            ]}
             onPress={() => router.back()}
           >
             <Text
-              style={styles.backButtonText}
+              style={[
+                styles.backButtonText,
+                {
+                  color: colors.text,
+                },
+              ]}
             >
               ‹
             </Text>
           </Pressable>
 
-          <Text style={styles.headerTitle}>
+          <Text
+            style={[
+              styles.headerTitle,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
             Habit Detail
           </Text>
 
@@ -153,7 +238,14 @@ export default function HabitDetailScreen() {
               })
             }
           >
-            <Text style={styles.editButtonText}>
+            <Text
+              style={[
+                styles.editButtonText,
+                {
+                  color: colors.primary,
+                },
+              ]}
+            >
               Edit
             </Text>
           </Pressable>
@@ -161,18 +253,58 @@ export default function HabitDetailScreen() {
 
         {/* Habit Info */}
 
-        <View style={styles.heroCard}>
-          <View style={styles.heroIcon}>
-            <Text style={styles.heroEmoji}>
+        <View
+          style={[
+            styles.heroCard,
+            {
+              backgroundColor:
+                colors.card,
+              borderColor:
+                colors.border,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.heroIcon,
+              {
+                backgroundColor:
+                  colors.primarySoft,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.heroEmoji,
+                {
+                  color: colors.primary,
+                },
+              ]}
+            >
               ✓
             </Text>
           </View>
 
-          <Text style={styles.habitName}>
+          <Text
+            style={[
+              styles.habitName,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
             {habit.name}
           </Text>
 
-          <Text style={styles.habitDescription}>
+          <Text
+            style={[
+              styles.habitDescription,
+              {
+                color:
+                  colors.textSecondary,
+              },
+            ]}
+          >
             {habit.description}
           </Text>
         </View>
@@ -180,40 +312,104 @@ export default function HabitDetailScreen() {
         {/* Quick Stats */}
 
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
+          <View
+            style={[
+              styles.statCard,
+              {
+                backgroundColor:
+                  colors.card,
+                borderColor:
+                  colors.border,
+              },
+            ]}
+          >
             <Text style={styles.statEmoji}>
               🔥
             </Text>
 
-            <Text style={styles.statLabel}>
+            <Text
+              style={[
+                styles.statLabel,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
+            >
               Current Streak
             </Text>
 
-            <Text style={styles.statValue}>
+            <Text
+              style={[
+                styles.statValue,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
               {currentStreak}
             </Text>
 
-            <Text style={styles.statUnit}>
+            <Text
+              style={[
+                styles.statUnit,
+                {
+                  color: colors.textMuted,
+                },
+              ]}
+            >
               {currentStreak === 1
                 ? 'day'
                 : 'days'}
             </Text>
           </View>
 
-          <View style={styles.statCard}>
+          <View
+            style={[
+              styles.statCard,
+              {
+                backgroundColor:
+                  colors.card,
+                borderColor:
+                  colors.border,
+              },
+            ]}
+          >
             <Text style={styles.statEmoji}>
               ✓
             </Text>
 
-            <Text style={styles.statLabel}>
+            <Text
+              style={[
+                styles.statLabel,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
+            >
               Completed
             </Text>
 
-            <Text style={styles.statValue}>
+            <Text
+              style={[
+                styles.statValue,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
               {completedDates.length}
             </Text>
 
-            <Text style={styles.statUnit}>
+            <Text
+              style={[
+                styles.statUnit,
+                {
+                  color: colors.textMuted,
+                },
+              ]}
+            >
               total
             </Text>
           </View>
@@ -222,49 +418,88 @@ export default function HabitDetailScreen() {
         {/* Completion */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
             Weekly Completion
           </Text>
 
-          <View style={styles.completionCard}>
+          <View
+            style={[
+              styles.completionCard,
+              {
+                backgroundColor:
+                  colors.card,
+                borderColor:
+                  colors.border,
+              },
+            ]}
+          >
             <View
               style={
                 styles.completionHeader
               }
             >
               <Text
-                style={
-                  styles.completionDescription
-                }
+                style={[
+                  styles.completionDescription,
+                  {
+                    color:
+                      colors.textSecondary,
+                  },
+                ]}
               >
                 Last 7 days
               </Text>
 
               <Text
-                style={
-                  styles.completionPercentage
-                }
+                style={[
+                  styles.completionPercentage,
+                  {
+                    color:
+                      colors.primary,
+                  },
+                ]}
               >
                 {completionRate}%
               </Text>
             </View>
 
             <View
-              style={
-                styles.progressBackground
-              }
+              style={[
+                styles.progressBackground,
+                {
+                  backgroundColor:
+                    colors.border,
+                },
+              ]}
             >
               <View
                 style={[
                   styles.progressFill,
                   {
                     width: `${completionRate}%`,
+                    backgroundColor:
+                      colors.primary,
                   },
                 ]}
               />
             </View>
 
-            <Text style={styles.completionCount}>
+            <Text
+              style={[
+                styles.completionCount,
+                {
+                  color:
+                    colors.textSecondary,
+                },
+              ]}
+            >
               {weeklyCompleted} of{' '}
               {weeklyScheduled} scheduled
               check-ins completed
@@ -275,11 +510,28 @@ export default function HabitDetailScreen() {
         {/* 7 Day History */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
             Last 7 Days
           </Text>
 
-          <View style={styles.historyCard}>
+          <View
+            style={[
+              styles.historyCard,
+              {
+                backgroundColor:
+                  colors.card,
+                borderColor:
+                  colors.border,
+              },
+            ]}
+          >
             {lastSevenDays.map((date) => {
               const dateObject =
                 new Date(
@@ -319,8 +571,14 @@ export default function HabitDetailScreen() {
                   <Text
                     style={[
                       styles.historyDay,
-                      isToday &&
-                        styles.historyDayToday,
+                      {
+                        color:
+                          colors.textSecondary,
+                      },
+                      isToday && {
+                        color:
+                          colors.primary,
+                      },
                     ]}
                   >
                     {dayName}
@@ -329,21 +587,44 @@ export default function HabitDetailScreen() {
                   <View
                     style={[
                       styles.historyCircle,
-                      isCompleted &&
-                        styles.historyCircleCompleted,
-                      !isScheduled &&
-                        styles.historyCircleDisabled,
-                      isToday &&
-                        styles.historyCircleToday,
+                      {
+                        backgroundColor:
+                          colors.input,
+                      },
+                      isCompleted && {
+                        backgroundColor:
+                          completedCircleBackground,
+                      },
+                      !isScheduled && {
+                        backgroundColor:
+                          disabledCircleBackground,
+                      },
+                      isToday && {
+                        borderWidth: 2,
+                        borderColor:
+                          colors.primary,
+                        backgroundColor:
+                          isCompleted
+                            ? completedCircleBackground
+                            : todayCircleBackground,
+                      },
                     ]}
                   >
                     <Text
                       style={[
                         styles.historyCircleText,
-                        isCompleted &&
-                          styles.historyCircleTextCompleted,
-                        !isScheduled &&
-                          styles.historyCircleTextDisabled,
+                        {
+                          color:
+                            colors.textMuted,
+                        },
+                        isCompleted && {
+                          color:
+                            colors.success,
+                        },
+                        !isScheduled && {
+                          color:
+                            colors.textMuted,
+                        },
                       ]}
                     >
                       {isCompleted
@@ -357,8 +638,15 @@ export default function HabitDetailScreen() {
                   <Text
                     style={[
                       styles.historyNumber,
-                      isToday &&
-                        styles.historyNumberToday,
+                      {
+                        color:
+                          colors.textMuted,
+                      },
+                      isToday && {
+                        color:
+                          colors.primary,
+                        fontWeight: '700',
+                      },
                     ]}
                   >
                     {dayNumber}
@@ -372,64 +660,131 @@ export default function HabitDetailScreen() {
         {/* Habit Settings */}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
             Habit Settings
           </Text>
 
-          <View style={styles.settingsCard}>
+          <View
+            style={[
+              styles.settingsCard,
+              {
+                backgroundColor:
+                  colors.card,
+                borderColor:
+                  colors.border,
+              },
+            ]}
+          >
             <View style={styles.settingRow}>
               <View
-                style={styles.settingIcon}
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor:
+                      settingIconBackground,
+                  },
+                ]}
               >
                 <Text>📅</Text>
               </View>
 
               <View
-                style={styles.settingContent}
+                style={
+                  styles.settingContent
+                }
               >
                 <Text
-                  style={styles.settingLabel}
+                  style={[
+                    styles.settingLabel,
+                    {
+                      color:
+                        colors.textSecondary,
+                    },
+                  ]}
                 >
                   Frequency
                 </Text>
 
                 <Text
-                  style={
-                    styles.settingValue
-                  }
+                  style={[
+                    styles.settingValue,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
                 >
                   {frequencyLabel}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.divider} />
+            <View
+              style={[
+                styles.divider,
+                {
+                  backgroundColor:
+                    colors.border,
+                },
+              ]}
+            />
 
             <View style={styles.settingRow}>
               <View
-                style={styles.settingIcon}
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor:
+                      settingIconBackground,
+                  },
+                ]}
               >
                 <Text>🔔</Text>
               </View>
 
               <View
-                style={styles.settingContent}
+                style={
+                  styles.settingContent
+                }
               >
                 <Text
-                  style={styles.settingLabel}
+                  style={[
+                    styles.settingLabel,
+                    {
+                      color:
+                        colors.textSecondary,
+                    },
+                  ]}
                 >
                   Reminder
                 </Text>
 
                 <Text
-                  style={styles.settingValue}
+                  style={[
+                    styles.settingValue,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
                 >
                   {habit.reminderEnabled
                     ? `Every scheduled day at ${String(
                         habit.reminderHour
-                      ).padStart(2, '0')}:${String(
+                      ).padStart(
+                        2,
+                        '0'
+                      )}:${String(
                         habit.reminderMinute
-                      ).padStart(2, '0')}`
+                      ).padStart(
+                        2,
+                        '0'
+                      )}`
                     : 'Disabled'}
                 </Text>
               </View>
@@ -442,6 +797,10 @@ export default function HabitDetailScreen() {
         <Pressable
           style={({ pressed }) => [
             styles.editHabitButton,
+            {
+              backgroundColor:
+                colors.primary,
+            },
             pressed &&
               styles.editHabitButtonPressed,
           ]}
@@ -453,9 +812,11 @@ export default function HabitDetailScreen() {
           }
         >
           <Text
-            style={styles.editHabitButtonText}
+            style={
+              styles.editHabitButtonText
+            }
           >
-            ✏️  Edit Habit
+            ✏️ Edit Habit
           </Text>
         </Pressable>
       </ScrollView>
@@ -466,7 +827,6 @@ export default function HabitDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
   },
 
   content: {
@@ -487,14 +847,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
 
   backButtonText: {
     fontSize: 32,
-    color: '#0F172A',
     lineHeight: 36,
     marginTop: -4,
   },
@@ -502,7 +861,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#0F172A',
   },
 
   editButton: {
@@ -513,17 +871,14 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#2563EB',
   },
 
   /* Hero */
 
   heroCard: {
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     padding: 24,
     marginBottom: 16,
   },
@@ -532,7 +887,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#DBEAFE',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
@@ -541,20 +895,17 @@ const styles = StyleSheet.create({
   heroEmoji: {
     fontSize: 30,
     fontWeight: '800',
-    color: '#2563EB',
   },
 
   habitName: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#0F172A',
     textAlign: 'center',
   },
 
   habitDescription: {
     marginTop: 6,
     fontSize: 14,
-    color: '#64748B',
     textAlign: 'center',
   },
 
@@ -568,10 +919,8 @@ const styles = StyleSheet.create({
 
   statCard: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     padding: 18,
   },
 
@@ -583,19 +932,16 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#64748B',
   },
 
   statValue: {
     marginTop: 5,
     fontSize: 28,
     fontWeight: '800',
-    color: '#0F172A',
   },
 
   statUnit: {
     fontSize: 12,
-    color: '#94A3B8',
   },
 
   /* Sections */
@@ -607,17 +953,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
-    color: '#0F172A',
     marginBottom: 12,
   },
 
   /* Completion */
 
   completionCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     padding: 18,
   },
 
@@ -629,19 +972,16 @@ const styles = StyleSheet.create({
 
   completionDescription: {
     fontSize: 13,
-    color: '#64748B',
   },
 
   completionPercentage: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#2563EB',
   },
 
   progressBackground: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#E2E8F0',
     overflow: 'hidden',
     marginTop: 14,
   },
@@ -649,13 +989,11 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 4,
-    backgroundColor: '#2563EB',
   },
 
   completionCount: {
     marginTop: 10,
     fontSize: 12,
-    color: '#64748B',
   },
 
   /* History */
@@ -663,10 +1001,8 @@ const styles = StyleSheet.create({
   historyCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     paddingHorizontal: 10,
     paddingVertical: 18,
   },
@@ -679,12 +1015,7 @@ const styles = StyleSheet.create({
   historyDay: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#64748B',
     marginBottom: 8,
-  },
-
-  historyDayToday: {
-    color: '#2563EB',
   },
 
   historyCircle: {
@@ -693,54 +1024,23 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
-  },
-
-  historyCircleCompleted: {
-    backgroundColor: '#DCFCE7',
-  },
-
-  historyCircleDisabled: {
-    backgroundColor: '#E2E8F0',
-  },
-
-  historyCircleToday: {
-    borderWidth: 2,
-    borderColor: '#2563EB',
   },
 
   historyCircleText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#94A3B8',
-  },
-
-  historyCircleTextCompleted: {
-    color: '#16A34A',
-  },
-
-  historyCircleTextDisabled: {
-    color: '#CBD5E1',
   },
 
   historyNumber: {
     marginTop: 7,
     fontSize: 11,
-    color: '#94A3B8',
-  },
-
-  historyNumberToday: {
-    color: '#2563EB',
-    fontWeight: '700',
   },
 
   /* Settings */
 
   settingsCard: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     paddingHorizontal: 18,
   },
 
@@ -754,7 +1054,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -766,25 +1065,21 @@ const styles = StyleSheet.create({
 
   settingLabel: {
     fontSize: 13,
-    color: '#64748B',
   },
 
   settingValue: {
     marginTop: 3,
     fontSize: 15,
     fontWeight: '600',
-    color: '#0F172A',
   },
 
   divider: {
     height: 1,
-    backgroundColor: '#E2E8F0',
   },
 
   /* Edit */
 
   editHabitButton: {
-    backgroundColor: '#0F172A',
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
@@ -817,19 +1112,16 @@ const styles = StyleSheet.create({
   notFoundTitle: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#0F172A',
   },
 
   notFoundDescription: {
     marginTop: 6,
     fontSize: 14,
-    color: '#64748B',
     textAlign: 'center',
   },
 
   backHomeButton: {
     marginTop: 20,
-    backgroundColor: '#0F172A',
     paddingHorizontal: 24,
     paddingVertical: 13,
     borderRadius: 12,
